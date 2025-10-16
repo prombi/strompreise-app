@@ -7,7 +7,9 @@ import pandas as pd
 import pytz
 import requests
 import streamlit as st
-import altair as alt
+# import altair as alt
+import plotly.graph_objects as go
+
 
 # ---------------------------------------------------------
 # Page config
