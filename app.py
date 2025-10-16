@@ -2,6 +2,8 @@ import requests, pandas as pd, datetime as dt
 import pytz
 import streamlit as st
 import altair as alt
+import time
+from typing import Optional
 
 # ------------------------------ #
 # Seite & Grund-Setup
@@ -130,23 +132,119 @@ with top2:
 # ------------------------------ #
 # Daten holen (SMARD 4169)
 # ------------------------------ #
-BASE = "https://www.smard.de/app"
-FILTER = "4169"  # Marktpreis
-REGION = "DE"
-index_url = f"{BASE}/chart_data/{FILTER}/{REGION}/index_{resolution}.json"
-idx = requests.get(index_url, timeout=30).json()
-last_ts = idx["timestamps"][-1]
-data_url = f"{BASE}/table_data/{FILTER}/{REGION}/{FILTER}_{REGION}_{resolution}_{last_ts}.json"
-raw = requests.get(data_url, timeout=30).json()
+# ------ ROBUSTER SMARD-LOADER (ersetzt deinen bisherigen Ladeblock) ------
+import time
+from typing import Optional, Tuple, List
 
-series = raw["series"]  # [[ts_ms, eur_per_mwh], ...]
-df = pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
-df["ts"] = pd.to_datetime(df["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
-df["ct_per_kwh"] = df["eur_per_mwh"] * 0.1  # €/MWh → ct/kWh
+SERIES_ID = "4169"             # Day-Ahead Marktpreis
+REGION_CANDIDATES = ["DE-LU", "DE"]  # beide probieren
+SMARD_BASE = "https://www.smard.de/app"
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Streamlit-SMARD/1.0)"}
+
+class SmardError(Exception): ...
+_last_tried: List[str] = []     # sammelt zuletzt getestete URLs für Diagnose
+
+def _safe_get_json(url: str, timeout: int = 30) -> dict:
+    _last_tried.append(url)
+    r = requests.get(url, headers=HEADERS, timeout=timeout)
+    if r.status_code != 200:
+        raise SmardError(f"HTTP {r.status_code} für {url}")
+    ctype = r.headers.get("Content-Type", "")
+    try:
+        return r.json()
+    except Exception:
+        snippet = (r.text or "")[:120].replace("\n", " ")
+        raise SmardError(f"Kein JSON von {url}. Content-Type='{ctype}', Antwort: '{snippet}...'")
+
+def _get_index(region: str, resolution: str) -> list[int]:
+    url = f"{SMARD_BASE}/chart_data/{SERIES_ID}/{region}/index_{resolution}.json"
+    data = _safe_get_json(url)
+    ts = data.get("timestamps") or []
+    if not ts:
+        raise SmardError(f"Keine timestamps in index_{resolution}.json ({region})")
+    return ts
+
+def _try_load_series(region: str, resolution: str, ts: int) -> Optional[pd.DataFrame]:
+    # 1) table_data (bevorzugt laut Beispielen)
+    url_table = f"{SMARD_BASE}/table_data/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
+    try:
+        data = _safe_get_json(url_table)
+        series = data.get("series")
+        if series:
+            return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
+    except SmardError:
+        pass
+    # 2) chart_data als Fallback (hat teils früher Daten)
+    url_chart = f"{SMARD_BASE}/chart_data/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
+    try:
+        data = _safe_get_json(url_chart)
+        series = data.get("series")
+        if series:
+            return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
+    except SmardError:
+        return None
+    return None
+
+@st.cache_data(ttl=900)
+def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int = 12) -> Tuple[pd.DataFrame, str, str]:
+    # versuche quarterhour -> hour
+    resolutions = [prefer_resolution] + ([r for r in ["hour"] if r != prefer_resolution])
+    for region in REGION_CANDIDATES:
+        for resolution in resolutions:
+            try:
+                idx = _get_index(region, resolution)
+            except SmardError:
+                continue
+            # die letzten N Timestamps rückwärts probieren
+            for ts in reversed(idx[-(max_backsteps+1):]):
+                df = _try_load_series(region, resolution, ts)
+                if df is not None and not df.empty:
+                    return df, resolution, region
+                time.sleep(0.15)
+    raise SmardError("Keine gültige SMARD-Datei gefunden (region/auflösung/ts).")
+
+# --- Aufruf im Hauptfluss (ersetze deinen bisherigen try/except) ---
+try:
+    df_raw, used_resolution, used_region = load_smard_series(prefer_resolution="quarterhour", max_backsteps=12)
+except SmardError as e:
+    # zeige die letzten getesteten URLs an – super hilfreich beim Debuggen
+    with st.expander("Diagnose: letzte getestete URLs"):
+        for u in _last_tried[-12:]:
+            st.code(u)
+    st.error(
+        "⚠️ Konnte SMARD-Daten nicht laden.\n\n"
+        f"Fehler: {e}\n\n"
+        "Tipps: 1) Später erneut versuchen (frischer Timestamp), "
+        "2) 'Auflösung' in der UI auf 'hour' stellen, "
+        "3) Unternehmens-Proxy prüfen."
+    )
+    st.stop()
+# ------ ENDE ROBUSTER LOADER ------
+
+
+# ---------- Benutzung im Hauptcode ----------
+try:
+    df_raw, used_resolution, used_region = load_smard_series(prefer_resolution="quarterhour", max_backsteps=6)
+except SmardError as e:
+    st.error(
+        "⚠️ Konnte SMARD-Daten nicht laden.\n\n"
+        f"Fehler: {e}\n\n"
+        "Probier es in ein paar Minuten erneut. Fällt das häufiger auf, schalte in der UI auf 'hour' "
+        "oder verringere 'max_backsteps'."
+    )
+    st.stop()
+
+# ab hier wie gehabt weiterrechnen:
+import pytz, datetime as dt
+df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
+df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
 
 # Heute bis Ende der Prognose
 today = dt.datetime.now(tz=pytz.timezone("Europe/Berlin")).date()
-df = df[df["ts"].dt.date >= today].copy()
+df = df_raw[df_raw["ts"].dt.date >= today].copy()
+
+
+
 
 # Preisansicht berechnen
 include_fees = (view_mode == "Inkl. Gebühren")
