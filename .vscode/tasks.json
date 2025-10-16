@@ -1,0 +1,6 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Streamlit (uv run)", "type": "shell", "command": "uv run -- streamlit run app.py" }
+  ]
+}
