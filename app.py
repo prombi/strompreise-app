@@ -2,14 +2,11 @@
 import time
 from typing import Optional, Tuple, List
 import datetime as dt
-
 import pandas as pd
 import pytz
 import requests
 import streamlit as st
-# import altair as alt
 import plotly.graph_objects as go
-
 
 # ---------------------------------------------------------
 # Page config
@@ -25,34 +22,22 @@ st.caption(
 # Gebühren-Heuristik (MVP) + Preisberechnung
 # ---------------------------------------------------------
 def estimate_fees_from_plz(plz: str):
-    """
-    Sehr grobe Vorbelegung:
-    - KAV (Konzessionsabgabe) über PLZ-Prefix als Proxy für Gemeindegröße
-    - Netzentgelt als grobe Regionalpauschale (nur Platzhalter!)
-    Alle Werte in ct/kWh, MwSt in %.
-    """
     prefix = (plz or "").strip()[:2]
 
     big_cities = {
-        "10","11","12","13","14",  # Berlin
-        "20","21","22",            # Hamburg
-        "80","81","82","85","86",  # München/OBB
-        "50","51","53",            # Köln/Bonn
-        "60","61","63","65",       # Frankfurt/Rhein-Main
-        "70","71","72","73",       # Stuttgart-Region
-        "40","41","42","44","45",  # Düsseldorf/Ruhr
-        "30","31","32",            # Hannover/Umfeld
-        "90","91",                 # Nürnberg/Fürth/ER
-        "01","04"                  # Dresden/Leipzig
+        "10","11","12","13","14","20","21","22","80","81","82","85","86",
+        "50","51","53","60","61","63","65","70","71","72","73","40","41",
+        "42","44","45","30","31","32","90","91","01","04"
     }
-    mid_cities = {"33","34","47","48","49","54","55","56","66","67","68","69","74","75","76","77","78","79","83","84","87","88","89"}
+    mid_cities = {"33","34","47","48","49","54","55","56","66","67","68","69",
+                  "74","75","76","77","78","79","83","84","87","88","89"}
 
     if prefix in big_cities:
         kav = 2.39
     elif prefix in mid_cities:
         kav = 1.99
     else:
-        kav = 1.59  # Default
+        kav = 1.59
 
     north_east = {"01","02","03","04","10","11","12","13","14","17","18","19","23","24"}
     south = {"80","81","82","83","84","85","86","87","88","89","90","91"}
@@ -84,7 +69,7 @@ def compute_price(ct_per_kwh: float, fees: dict, include_fees: bool) -> float:
     return net_sum * (1 + fees["mwst"] / 100.0)
 
 # ---------------------------------------------------------
-# Sidebar: PLZ + manuelle Gebühren
+# Sidebar
 # ---------------------------------------------------------
 with st.sidebar:
     st.header("Gebühren einstellen")
@@ -106,52 +91,46 @@ with st.sidebar:
 
     st.subheader("Manuell anpassen")
     st.session_state.fees["stromsteuer_ct"] = st.number_input(
-        "Stromsteuer (ct/kWh)", min_value=0.0, max_value=10.0,
-        value=float(st.session_state.fees.get("stromsteuer_ct", 2.05)), step=0.01
+        "Stromsteuer (ct/kWh)", 0.0, 10.0, float(st.session_state.fees.get("stromsteuer_ct", 2.05)), 0.01
     )
     st.session_state.fees["umlagen_ct"] = st.number_input(
-        "Umlagen gesamt (ct/kWh)", min_value=0.0, max_value=10.0,
-        value=float(st.session_state.fees.get("umlagen_ct", 2.651)), step=0.001
+        "Umlagen gesamt (ct/kWh)", 0.0, 10.0, float(st.session_state.fees.get("umlagen_ct", 2.651)), 0.001
     )
     st.session_state.fees["konzessionsabgabe_ct"] = st.number_input(
-        "Konzessionsabgabe (ct/kWh)", min_value=0.0, max_value=5.0,
-        value=float(st.session_state.fees.get("konzessionsabgabe_ct", 1.59)), step=0.01
+        "Konzessionsabgabe (ct/kWh)", 0.0, 5.0, float(st.session_state.fees.get("konzessionsabgabe_ct", 1.59)), 0.01
     )
     st.session_state.fees["netzentgelt_ct"] = st.number_input(
-        "Netzentgelt pauschal (ct/kWh)", min_value=0.0, max_value=50.0,
-        value=float(st.session_state.fees.get("netzentgelt_ct", 8.0)), step=0.1
+        "Netzentgelt pauschal (ct/kWh)", 0.0, 50.0, float(st.session_state.fees.get("netzentgelt_ct", 8.0)), 0.1
     )
     st.session_state.fees["mwst"] = st.number_input(
-        "MwSt (%)", min_value=0, max_value=25,
-        value=int(st.session_state.fees.get("mwst", 19)), step=1
+        "MwSt (%)", 0, 25, int(st.session_state.fees.get("mwst", 19)), 1
     )
 
 # ---------------------------------------------------------
-# Top UI: Ansicht + Auflösung
+# Top controls
 # ---------------------------------------------------------
-top1, top2 = st.columns(2)
-with top1:
+col1, col2 = st.columns(2)
+with col1:
     try:
-        view_mode = st.segmented_control("Ansicht", options=["Ohne Gebühren", "Inkl. Gebühren"], default="Ohne Gebühren")
+        view_mode = st.segmented_control("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], default="Ohne Gebühren")
     except Exception:
-        # Fallback für ältere Streamlit-Versionen
-        view_mode = st.radio("Ansicht", options=["Ohne Gebühren", "Inkl. Gebühren"], index=0)
-with top2:
+        view_mode = st.radio("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], index=0)
+with col2:
     resolution_choice = st.selectbox("Auflösung", ["quarterhour", "hour"], index=0)
 
 include_fees = (view_mode == "Inkl. Gebühren")
 
 # ---------------------------------------------------------
-# ROBUSTER SMARD-LOADER
+# SMARD Loader
 # ---------------------------------------------------------
-SERIES_ID = "4169"                          # Day-Ahead Marktpreis
-REGION_CANDIDATES = ["DE-LU", "DE"]         # mehrere Regionen probieren
+SERIES_ID = "4169"
+REGION_CANDIDATES = ["DE-LU", "DE"]
 SMARD_BASE = "https://www.smard.de/app"
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Streamlit-SMARD/1.0)"}
-_last_tried: List[str] = []                 # sammelt zuletzt getestete URLs
+_last_tried: List[str] = []
 
 class SmardError(Exception):
-    ...
+    pass
 
 def _safe_get_json(url: str, timeout: int = 30) -> dict:
     _last_tried.append(url)
@@ -174,29 +153,19 @@ def _get_index(region: str, resolution: str) -> list[int]:
     return ts
 
 def _try_load_series(region: str, resolution: str, ts: int) -> Optional[pd.DataFrame]:
-    # 1) table_data (typisch für Tabellenansicht)
-    url_table = f"{SMARD_BASE}/table_data/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
-    try:
-        data = _safe_get_json(url_table)
-        series = data.get("series")
-        if series:
-            return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
-    except SmardError:
-        pass
-    # 2) chart_data (manchmal früher verfügbar)
-    url_chart = f"{SMARD_BASE}/chart_data/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
-    try:
-        data = _safe_get_json(url_chart)
-        series = data.get("series")
-        if series:
-            return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
-    except SmardError:
-        return None
+    for path in ["table_data", "chart_data"]:
+        url = f"{SMARD_BASE}/{path}/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
+        try:
+            data = _safe_get_json(url)
+            series = data.get("series")
+            if series:
+                return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
+        except SmardError:
+            continue
     return None
 
-@st.cache_data(ttl=900)  # 15 Minuten Cache
+@st.cache_data(ttl=900)
 def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int = 12) -> Tuple[pd.DataFrame, str, str]:
-    # Versuchsreihenfolge: bevorzugte Auflösung → hour
     resolutions = [prefer_resolution] + ([r for r in ["hour"] if r != prefer_resolution])
     for region in REGION_CANDIDATES:
         for resolution in resolutions:
@@ -204,7 +173,6 @@ def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int
                 idx = _get_index(region, resolution)
             except SmardError:
                 continue
-            # die letzten N Timestamps rückwärts probieren
             for ts in reversed(idx[-(max_backsteps + 1):]):
                 df = _try_load_series(region, resolution, ts)
                 if df is not None and not df.empty:
@@ -212,11 +180,9 @@ def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int
                 time.sleep(0.15)
     raise SmardError("Keine gültige SMARD-Datei gefunden (region/auflösung/ts).")
 
-# ---- Aufruf + Fehlerbehandlung ----
 try:
     df_raw, used_resolution, used_region = load_smard_series(
-        prefer_resolution=resolution_choice,  # aus der UI
-        max_backsteps=12
+        prefer_resolution=resolution_choice, max_backsteps=12
     )
 except SmardError as e:
     with st.expander("Diagnose: letzte getestete URLs"):
@@ -231,65 +197,116 @@ except SmardError as e:
     st.stop()
 
 # ---------------------------------------------------------
-# Datenaufbereitung (heute → Ende Prognose)
+# Data preparation
 # ---------------------------------------------------------
 tz_berlin = pytz.timezone("Europe/Berlin")
 df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
-df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1  # €/MWh → ct/kWh
+df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
 
-today = dt.datetime.now(tz=tz_berlin).date()
-df = df_raw[df_raw["ts"].dt.date >= today].copy()
+# ---------------------------------------------------------
+# Zeitfenster: ab aktuellem Mittag (12:00) bis nächstes Mittag (12:00)
+# ---------------------------------------------------------
+tz_berlin = pytz.timezone("Europe/Berlin")
+now = dt.datetime.now(tz=tz_berlin)
+today = now.date()
+tomorrow = today + dt.timedelta(days=1)
 
+# Define window: from today's 12:00 to tomorrow's 12:00
+start_window = tz_berlin.localize(dt.datetime.combine(today, dt.time(12, 0)))
+end_window = start_window + dt.timedelta(days=1)
+
+df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
+df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
+
+# Keep only rows in this 24-h auction window
+df = df_raw[(df_raw["ts"] >= start_window) & (df_raw["ts"] < end_window)].copy()
 if df.empty:
-    st.info("Für heute liegen noch keine Daten vor. Bitte später erneut versuchen.")
+    st.info("Für dieses Zeitfenster liegen noch keine Day-Ahead-Daten vor.")
     st.stop()
 
-# Preisansicht
-df["price_view"] = df["ct_per_kwh"].apply(lambda x: compute_price(x, st.session_state.fees, include_fees))
-label = "Spot (ct/kWh)" if not include_fees else "Spot inkl. Gebühren (ct/kWh)"
+# ---------------------------------------------------------
+# Komponenten: Spot + Gebühren (inkl. MwSt)
+# ---------------------------------------------------------
+fees = st.session_state.fees
+df["spot_ct"] = df["ct_per_kwh"]
+
+# Total fees incl. VAT (surcharges + VAT on surcharges + VAT on spot)
+fees_no_vat = (
+    fees["stromsteuer_ct"]
+    + fees["umlagen_ct"]
+    + fees["konzessionsabgabe_ct"]
+    + fees["netzentgelt_ct"]
+)
+df["fees_incl_vat_ct"] = (fees_no_vat + df["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
+df["total_ct"] = df["spot_ct"] + df["fees_incl_vat_ct"]
 
 # ---------------------------------------------------------
-# Kennzahlen
+# KPIs (Gesamtpreis oder Spot)
 # ---------------------------------------------------------
+metric_col = "total_ct" if include_fees else "spot_ct"
 now_local = pd.Timestamp.now(tz="Europe/Berlin")
-current_idx = df["ts"].searchsorted(now_local, side="left")
-current_idx = min(current_idx, len(df) - 1)
-current_price = float(df.iloc[current_idx]["price_view"])
-
-m, M, avg = float(df["price_view"].min()), float(df["price_view"].max()), float(df["price_view"].mean())
+current_idx = min(df["ts"].searchsorted(now_local, side="left"), len(df) - 1)
+current_price = float(df.iloc[current_idx][metric_col])
+m, M, avg = float(df[metric_col].min()), float(df[metric_col].max()), float(df[metric_col].mean())
 
 k1, k2, k3 = st.columns(3)
 k1.metric("aktuell", f"{current_price:.2f} ct/kWh")
 k2.metric("⭣ min", f"{m:.2f} ct/kWh")
 k3.metric("⭡ max", f"{M:.2f} ct/kWh")
-st.caption(f"Durchschnitt heute: {avg:.2f} ct/kWh · Auflösung: {used_resolution} · Region: {used_region}")
-
-# ---------------------------------------------------------
-# Chart
-# ---------------------------------------------------------
-chart = (
-    alt.Chart(df)
-    .mark_area(interpolate="step-after", opacity=0.5)
-    .encode(
-        x=alt.X("ts:T", title="Zeit (lokal)"),
-        y=alt.Y("price_view:Q", title=label),
-        tooltip=[
-            alt.Tooltip("ts:T", title="Zeit"),
-            alt.Tooltip("price_view:Q", title=label, format=".2f")
-        ],
-    )
-    .properties(height=280)
+st.caption(
+    f"Durchschnitt: {avg:.2f} ct/kWh · "
+    f"Auflösung: {used_resolution} · Region: {used_region}"
 )
-st.altair_chart(chart, use_container_width=True)
 
 # ---------------------------------------------------------
-# Footer / Transparenz
+# Plotly chart: Börsenstrompreis + Gebühren inkl. MwSt (steps)
+# ---------------------------------------------------------
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+    x=df["ts"], y=df["spot_ct"],
+    name="Börsenstrompreis",
+    mode="lines",
+    line_shape="hv",  # step-like
+    line=dict(width=1.5, color="#1f77b4"),
+    hovertemplate=(
+        "Zeit: %{x|%d.%m %H:%M}<br>"
+        "Börsenstrompreis: %{y:.2f} ct/kWh"
+        "<br>Gesamtpreis: %{customdata:.2f} ct/kWh<extra></extra>"
+    ),
+    customdata=df["total_ct"],
+))
+
+fig.add_trace(go.Scatter(
+    x=df["ts"], y=df["fees_incl_vat_ct"],
+    name="Gebühren inkl. MwSt",
+    mode="lines",
+    line_shape="hv",
+    line=dict(width=1.5, color="#ff7f0e"),
+    stackgroup="one",
+    hovertemplate=(
+        "Zeit: %{x|%d.%m %H:%M}<br>"
+        "Gebühren inkl. MwSt: %{y:.2f} ct/kWh"
+        "<br>Gesamtpreis: %{customdata:.2f} ct/kWh<extra></extra>"
+    ),
+    customdata=df["total_ct"],
+))
+
+fig.update_layout(
+    height=380,
+    margin=dict(l=10, r=10, t=10, b=10),
+    xaxis_title="Zeit (lokal)",
+    yaxis_title="ct/kWh",
+    hovermode="x unified",
+    legend=dict(orientation="h", y=-0.25, x=0.0),
+    hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ---------------------------------------------------------
+# Footer
 # ---------------------------------------------------------
 st.caption(
-    f"PLZ: {st.session_state.plz} · Gebühren aktuell: "
-    f"Stromsteuer {st.session_state.fees['stromsteuer_ct']:.3g} ct, "
-    f"Umlagen {st.session_state.fees['umlagen_ct']:.3g} ct, "
-    f"Konzessionsabgabe {st.session_state.fees['konzessionsabgabe_ct']:.3g} ct, "
-    f"Netzentgelt {st.session_state.fees['netzentgelt_ct']:.3g} ct, "
-    f"MwSt {st.session_state.fees['mwst']} %."
+    f"Fenster: {start_window.strftime('%d.%m %H:%M')} – {end_window.strftime('%d.%m %H:%M')} · "
+    "Gestapelt: Börsenstrompreis + Gebühren (inkl. MwSt)"
 )
