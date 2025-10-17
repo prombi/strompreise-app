@@ -383,6 +383,7 @@ fees_no_vat = (
 )
 df["fees_incl_vat_ct"] = (fees_no_vat + df["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
 df["total_ct"] = df["spot_ct"] + df["fees_incl_vat_ct"]
+fees_hover = df[["fees_incl_vat_ct"]].to_numpy()
 
 # 6) KPIs based on the filtered view (respects slider)
 metric_col = "total_ct" if include_fees else "spot_ct"
@@ -409,28 +410,24 @@ fig.add_trace(go.Scatter(
     mode="lines",
     line_shape="hv",
     line=dict(width=0.8, color="#1f77b4"),
-    stackgroup="one",
-    hovertemplate=(
-        "Zeit: %{x|%d.%m %H:%M}<br>"
-        "Börsenstrompreis: %{y:.2f} ct/kWh"
-        "<br>Gesamtpreis: %{customdata:.2f} ct/kWh<extra></extra>"
-    ),
-    customdata=df["total_ct"],
+    fill="tozeroy",
+    fillcolor="rgba(31, 119, 180, 0.25)",
+    hovertemplate="Börsenstrompreis: %{y:.2f} ct/kWh<extra></extra>",
 ))
 
 fig.add_trace(go.Scatter(
-    x=df["ts"], y=df["fees_incl_vat_ct"],
-    name="Gebühren (inkl. MwSt)",
+    x=df["ts"], y=df["total_ct"],
+    name="Gesamtpreis",
     mode="lines",
     line_shape="hv",
-    line=dict(width=0.8, color="#ff7f0e"),
-    stackgroup="one",
+    line=dict(width=1.2, color="#d62728"),
+    fill="tonexty",
+    fillcolor="rgba(255, 127, 14, 0.35)",
+    customdata=fees_hover,
     hovertemplate=(
-        "Zeit: %{x|%d.%m %H:%M}<br>"
-        "Gebühren (inkl. MwSt): %{y:.2f} ct/kWh"
-        "<br>Gesamtpreis: %{customdata:.2f} ct/kWh<extra></extra>"
+        "Gesamtpreis: %{y:.2f} ct/kWh<br>"
+        "Gebühren (inkl. MwSt): %{customdata[0]:.2f} ct/kWh<extra></extra>"
     ),
-    customdata=df["total_ct"],
 ))
 
 fig.update_layout(
