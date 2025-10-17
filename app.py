@@ -9,6 +9,7 @@ import pandas as pd
 import pytz
 import streamlit as st
 import plotly.graph_objects as go
+from streamlit_plotly_events import plotly_events
 
 
 MODULE_NAME = "price_sources"
@@ -355,15 +356,12 @@ if default_start > default_end:
     # Fallback: if DA window not in data at all, default to full available range
     default_start, default_end = min_ts, max_ts
 
-# 3) Filter view based on range slider (defaults handled via xaxis range)
-df = df_all.copy()
-if df.empty:
-    st.warning("Im gewählten Zeitfenster liegen keine Preispunkte vor.")
-    st.stop()
+# 3) Prepare data for chart and stats
+stats_container = st.container()
 
-# 5) Compute the two chart layers (Börsenstrompreis, Gebühren inkl. MwSt) on the filtered view
 fees = st.session_state.fees
-df["spot_ct"] = df["ct_per_kwh"]
+df_chart = df_all.copy()
+df_chart["spot_ct"] = df_chart["ct_per_kwh"]
 
 fees_no_vat = (
     fees["stromsteuer_ct"]
@@ -371,42 +369,53 @@ fees_no_vat = (
     + fees["konzessionsabgabe_ct"]
     + fees["netzentgelt_ct"]
 )
-df["fees_incl_vat_ct"] = (fees_no_vat + df["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
-df["total_ct"] = df["spot_ct"] + df["fees_incl_vat_ct"]
-fees_hover = df[["fees_incl_vat_ct"]].to_numpy()
+df_chart["fees_incl_vat_ct"] = (fees_no_vat + df_chart["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
+df_chart["total_ct"] = df_chart["spot_ct"] + df_chart["fees_incl_vat_ct"]
+spot_series = df_chart["spot_ct"].astype(float)
+total_series = df_chart["total_ct"].astype(float)
+fees_series = df_chart["fees_incl_vat_ct"].astype(float)
+time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
+fees_hover = fees_series.round(6).tolist()
 
-# 6) KPIs based on the filtered view (respects slider)
-metric_col = "total_ct" if include_fees else "spot_ct"
-now_local = pd.Timestamp.now(tz="Europe/Berlin")
-current_idx = min(df["ts"].searchsorted(now_local, side="left"), len(df) - 1)
-current_price = float(df.iloc[current_idx][metric_col])
-m, M, avg = float(df[metric_col].min()), float(df[metric_col].max()), float(df[metric_col].mean())
+initial_view = (default_start, default_end)
+if "view_range" not in st.session_state:
+    st.session_state.view_range = initial_view
 
-k1, k2, k3 = st.columns(3)
-k1.metric("aktuell", f"{current_price:.2f} ct/kWh")
-k2.metric("⭣ min", f"{m:.2f} ct/kWh")
-k3.metric("⭡ max", f"{M:.2f} ct/kWh")
-st.caption(
-    f"Durchschnitt: {avg:.2f} ct/kWh · "
-    f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
-)
+def _normalize_ts(value) -> pd.Timestamp:
+    ts = pd.to_datetime(value)
+    if ts.tzinfo is None:
+        ts = tz_berlin.localize(ts)
+    else:
+        ts = ts.tz_convert(tz_berlin)
+    return ts
+
+view_start, view_end = st.session_state.view_range
+view_start = _normalize_ts(view_start)
+view_end = _normalize_ts(view_end)
+view_start = max(min_ts, view_start)
+view_end = min(max_ts, view_end)
+if view_start >= view_end:
+    view_start, view_end = initial_view
+st.session_state.view_range = (view_start, view_end)
 
 # 7) Plotly chart (two layers, step lines, classic colors)
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
-    x=df["ts"], y=df["spot_ct"],
+    x=time_series,
+    y=spot_series.tolist(),
     name="Börsenstrompreis",
     mode="lines",
     line_shape="hv",
     line=dict(width=0.8, color="#1f77b4"),
     fill="tozeroy",
     fillcolor="rgba(31, 119, 180, 0.25)",
-    hovertemplate="Börsenstrompreis: %{y:.2f} ct/kWh<extra></extra>",
+    hovertemplate="Börsenstrompreis: %{y:.1f} ct/kWh<extra></extra>",
 ))
 
 fig.add_trace(go.Scatter(
-    x=df["ts"], y=df["total_ct"],
+    x=time_series,
+    y=total_series.tolist(),
     name="Gesamtpreis",
     mode="lines",
     line_shape="hv",
@@ -415,8 +424,8 @@ fig.add_trace(go.Scatter(
     fillcolor="rgba(255, 127, 14, 0.35)",
     customdata=fees_hover,
     hovertemplate=(
-        "Gesamtpreis: %{y:.2f} ct/kWh<br>"
-        "Gebühren (inkl. MwSt): %{customdata[0]:.2f} ct/kWh<extra></extra>"
+        "Gesamtpreis: %{y:.1f} ct/kWh<br>"
+        "Gebühren (inkl. MwSt): %{customdata:.1f} ct/kWh<extra></extra>"
     ),
 ))
 
@@ -431,11 +440,12 @@ end_ref = max_ts.tz_convert(tz_berlin) if max_ts.tzinfo is not None else tz_berl
 start_day = start_ref.normalize()
 end_day = end_ref.normalize()
 for day in pd.date_range(start=start_day, end=end_day, freq="D", tz=tz_berlin):
+    day_naive = day.tz_localize(None)
     day_shapes.append(
         dict(
             type="line",
-            x0=day,
-            x1=day,
+            x0=day_naive,
+            x1=day_naive,
             y0=0,
             y1=1,
             xref="x",
@@ -445,11 +455,12 @@ for day in pd.date_range(start=start_day, end=end_day, freq="D", tz=tz_berlin):
     )
     noon = day + pd.Timedelta(hours=12)
     if min_ts <= noon <= max_ts:
+        noon_naive = noon.tz_localize(None)
         day_shapes.append(
             dict(
                 type="line",
-                x0=noon,
-                x1=noon,
+                x0=noon_naive,
+                x1=noon_naive,
                 y0=0,
                 y1=1,
                 xref="x",
@@ -458,27 +469,33 @@ for day in pd.date_range(start=start_day, end=end_day, freq="D", tz=tz_berlin):
             )
         )
 
-if min_ts <= now <= max_ts:
+now_ts = pd.Timestamp(now)
+if min_ts <= now_ts <= max_ts:
+    now_naive = now_ts.tz_localize(None) if now_ts.tzinfo else now_ts
     day_shapes.append(
         dict(
             type="line",
-            x0=now,
-            x1=now,
+            x0=now_naive,
+            x1=now_naive,
             y0=0,
             y1=1,
             xref="x",
             yref="paper",
             line=dict(color="#d62728", width=2),
         )
-    )
+)
 
+range_start_ts = pd.Timestamp(view_start)
+range_end_ts = pd.Timestamp(view_end)
+range_start = range_start_ts.tz_localize(None) if range_start_ts.tzinfo else range_start_ts
+range_end = range_end_ts.tz_localize(None) if range_end_ts.tzinfo else range_end_ts
 fig.update_layout(
     height=400,
     margin=dict(l=10, r=10, t=10, b=10),
     xaxis=dict(
         title="Zeit (lokal)",
         type="date",
-        range=[default_day_start, default_day_end],
+        range=[range_start, range_end],
         rangeslider=dict(visible=True),
     ),
     yaxis_title="ct/kWh",
@@ -487,7 +504,78 @@ fig.update_layout(
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
     shapes=day_shapes,
 )
-st.plotly_chart(fig, use_container_width=True)
+events = plotly_events(
+    fig,
+    click_event=False,
+    select_event=False,
+    hover_event=False,
+    override_height=420,
+    relayout_event=True,
+    key="price_chart",
+)
+
+new_start_raw = new_end_raw = None
+for event in events or []:
+    if not isinstance(event, dict):
+        continue
+    if "range" in event:
+        rng = event["range"]
+        if isinstance(rng, dict):
+            x_range = rng.get("x")
+            if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
+                new_start_raw, new_end_raw = x_range
+        elif isinstance(rng, (list, tuple)) and len(rng) == 2:
+            new_start_raw, new_end_raw = rng
+    if new_start_raw is None and "xaxis.range[0]" in event and "xaxis.range[1]" in event:
+        new_start_raw = event["xaxis.range[0]"]
+        new_end_raw = event["xaxis.range[1]"]
+    if new_start_raw is None and "xaxis.range" in event:
+        x_range = event["xaxis.range"]
+        if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
+            new_start_raw, new_end_raw = x_range
+    if new_start_raw is None and "data" in event:
+        data = event["data"]
+        if isinstance(data, dict):
+            x_range = data.get("xaxis.range")
+            if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
+                new_start_raw, new_end_raw = x_range
+
+if new_start_raw and new_end_raw:
+    new_start = _normalize_ts(new_start_raw)
+    new_end = _normalize_ts(new_end_raw)
+    new_start = max(min_ts, new_start)
+    new_end = min(max_ts, new_end)
+    if new_start < new_end and (new_start, new_end) != st.session_state.view_range:
+        st.session_state.view_range = (new_start, new_end)
+        st.experimental_rerun()
+
+view_start, view_end = st.session_state.view_range
+view_start = _normalize_ts(view_start)
+view_end = _normalize_ts(view_end)
+
+df_view = df_chart[(df_chart["ts"] >= view_start) & (df_chart["ts"] <= view_end)].copy()
+
+with stats_container:
+    if df_view.empty:
+        st.warning("Im ausgewählten Zeitbereich liegen keine Preispunkte vor.")
+    else:
+        metric_col = "total_ct" if include_fees else "spot_ct"
+        now_local = now
+        idx = df_view["ts"].searchsorted(now_local, side="left")
+        idx = min(max(idx, 0), len(df_view) - 1)
+        current_price = float(df_view.iloc[idx][metric_col])
+        avg = float(df_view[metric_col].mean())
+        min_price = float(df_view[metric_col].min())
+        max_price = float(df_view[metric_col].max())
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("aktuell", f"{current_price:.1f} ct/kWh")
+        c2.metric("average", f"{avg:.1f} ct/kWh")
+        c3.metric("⭣ min", f"{min_price:.1f} ct/kWh")
+        c4.metric("⭡ max", f"{max_price:.1f} ct/kWh")
+        st.caption(
+            f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
+        )
 
 # Footer about slider defaults vs full range (optional)
 st.caption(
