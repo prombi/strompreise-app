@@ -425,6 +425,53 @@ fig.add_trace(go.Scatter(
 default_day_start = midnight_today
 default_day_end = midnight_tomorrow
 
+day_shapes = []
+start_ref = min_ts.tz_convert(tz_berlin) if min_ts.tzinfo is not None else tz_berlin.localize(min_ts)
+end_ref = max_ts.tz_convert(tz_berlin) if max_ts.tzinfo is not None else tz_berlin.localize(max_ts)
+start_day = start_ref.normalize()
+end_day = end_ref.normalize()
+for day in pd.date_range(start=start_day, end=end_day, freq="D", tz=tz_berlin):
+    day_shapes.append(
+        dict(
+            type="line",
+            x0=day,
+            x1=day,
+            y0=0,
+            y1=1,
+            xref="x",
+            yref="paper",
+            line=dict(color="rgba(0,0,0,0.35)", width=1.5),
+        )
+    )
+    noon = day + pd.Timedelta(hours=12)
+    if min_ts <= noon <= max_ts:
+        day_shapes.append(
+            dict(
+                type="line",
+                x0=noon,
+                x1=noon,
+                y0=0,
+                y1=1,
+                xref="x",
+                yref="paper",
+                line=dict(color="rgba(0,0,0,0.2)", width=1, dash="dot"),
+            )
+        )
+
+if min_ts <= now <= max_ts:
+    day_shapes.append(
+        dict(
+            type="line",
+            x0=now,
+            x1=now,
+            y0=0,
+            y1=1,
+            xref="x",
+            yref="paper",
+            line=dict(color="#d62728", width=2),
+        )
+    )
+
 fig.update_layout(
     height=400,
     margin=dict(l=10, r=10, t=10, b=10),
@@ -438,11 +485,12 @@ fig.update_layout(
     hovermode="x unified",
     legend=dict(orientation="h", y=-0.25, x=0.0),
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
+    shapes=day_shapes,
 )
 st.plotly_chart(fig, use_container_width=True)
 
 # Footer about slider defaults vs full range (optional)
 st.caption(
     f"Standard-Fenster: {start_window.strftime('%d.%m %H:%M')} – {(start_window + dt.timedelta(days=1)).strftime('%d.%m %H:%M')} · "
-    "Den Schieberegler kannst du auf die komplette verfügbare Datenreichweite ausdehnen."
+    "Nutze den Range-Slider unter dem Diagramm, um andere Zeitbereiche auszuwählen."
 )
