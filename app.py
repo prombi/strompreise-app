@@ -375,6 +375,7 @@ spot_series = df_chart["spot_ct"].astype(float)
 total_series = df_chart["total_ct"].astype(float)
 fees_series = df_chart["fees_incl_vat_ct"].astype(float)
 time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
+# fees_hover = fees_series.to_numpy()
 fees_hover = fees_series.round(6).tolist()
 
 initial_view = (default_start, default_end)
@@ -410,7 +411,7 @@ fig.add_trace(go.Scatter(
     line=dict(width=0.8, color="#1f77b4"),
     fill="tozeroy",
     fillcolor="rgba(31, 119, 180, 0.25)",
-    hovertemplate="Börsenstrompreis: %{y:.1f} ct/kWh<extra></extra>",
+    hovertemplate="Börsenstrompreis: %{y:.1sf} ct/kWh<extra></extra>",
 ))
 
 fig.add_trace(go.Scatter(
