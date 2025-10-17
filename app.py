@@ -31,6 +31,11 @@ def _load_price_sources_module():
 
 price_sources = sys.modules.get(MODULE_NAME) or _load_price_sources_module()
 
+
+def _is_timezone_aware(values) -> bool:
+    dtype = getattr(values, "dtype", None)
+    return isinstance(dtype, pd.DatetimeTZDtype)
+
 # ---------------------------------------------------------
 # Page config
 # ---------------------------------------------------------
@@ -193,10 +198,11 @@ def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> 
             raise PriceDataError("Datensatz enthält keine Spalte 'ts' oder 'ts_ms'.")
     else:
         ts_series = df["ts"]
-        if not pd.api.types.is_datetime64tz_dtype(ts_series):
-            ts_series = pd.to_datetime(ts_series, utc=True)
 
-    if not pd.api.types.is_datetime64tz_dtype(ts_series):
+    if not _is_timezone_aware(ts_series):
+        ts_series = pd.to_datetime(ts_series, utc=True)
+
+    if not _is_timezone_aware(ts_series):
         ts_series = ts_series.dt.tz_localize("UTC")
 
     df["ts"] = ts_series.dt.tz_convert(tz)
