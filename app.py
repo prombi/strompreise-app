@@ -147,17 +147,16 @@ with col_source:
     selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=0)
     data_source_choice = SOURCE_OPTIONS[selected_source_label]
 with col_view:
-    try:
-        view_mode = st.segmented_control("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], default="Ohne Gebühren")
-    except Exception:
-        view_mode = st.radio("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], index=0)
+    include_fees = st.toggle("Inkl. Gebühren", value=False)
 with col_res:
     resolution_disabled = data_source_choice != "SMARD"
-    resolution_choice = st.selectbox(
-        "Auflösung", ["quarterhour", "hour"], index=0, disabled=resolution_disabled
+    resolution_is_quarterhour = st.toggle(
+        "Viertelstündlich",
+        value=True,
+        disabled=resolution_disabled,
+        help="Schaltet zwischen Viertelstunden- und Stundenauflösung (nur SMARD).",
     )
-
-include_fees = (view_mode == "Inkl. Gebühren")
+    resolution_choice = "quarterhour" if resolution_is_quarterhour else "hour"
 
 if "entsoe_token" not in st.session_state:
     st.session_state.entsoe_token = ""
@@ -334,14 +333,20 @@ noon_today = tz_berlin.localize(dt.datetime.combine(today, dt.time(12, 0)))
 noon_yesterday = tz_berlin.localize(dt.datetime.combine(yesterday, dt.time(12, 0)))
 noon_tomorrow  = tz_berlin.localize(dt.datetime.combine(tomorrow,  dt.time(12, 0)))
 
-if now < noon_today:
-    # before 12:00 → yesterday 12:00 → today 12:00
-    start_window = noon_yesterday
-    end_window   = noon_today
-else:
-    # at/after 12:00 → today 12:00 → tomorrow 12:00
-    start_window = noon_today
-    end_window   = noon_tomorrow
+midnight_today = tz_berlin.localize(dt.datetime.combine(today, dt.time(0, 0)))
+midnight_tomorrow = midnight_today + dt.timedelta(days=1)
+
+# if now < noon_today:
+#     # before 12:00 → yesterday 12:00 → today 12:00
+#     start_window = noon_yesterday
+#     end_window   = noon_today
+# else:
+#     # at/after 12:00 → today 12:00 → tomorrow 12:00
+#     start_window = noon_today
+#     end_window   = noon_tomorrow
+
+start_window = midnight_today
+end_window = midnight_tomorrow
 
 # Clamp defaults to available data (so the slider has valid defaults even if data ends earlier)
 default_start = max(min_ts, start_window)
@@ -350,23 +355,8 @@ if default_start > default_end:
     # Fallback: if DA window not in data at all, default to full available range
     default_start, default_end = min_ts, max_ts
 
-# 3) Slider spans the full available range; defaults are 12→12
-step_td = dt.timedelta(minutes=15 if used_resolution == "quarterhour" else 60)
-with st.sidebar:
-    st.subheader("Sichtbarer Zeitraum")
-    t_start, t_end = st.slider(
-        "Zeitfenster",
-        min_value=min_ts,
-        max_value=max_ts,
-        value=(default_start, default_end),
-        step=step_td,
-        format="DD.MM.YY HH:mm",
-    )
-
-# 4) Filter ONLY the view to the slider (dataset itself stays complete)
-t_start_ts = pd.Timestamp(t_start)
-t_end_ts   = pd.Timestamp(t_end)
-df = df_all[(df_all["ts"] >= t_start_ts) & (df_all["ts"] <= t_end_ts)].copy()
+# 3) Filter view based on range slider (defaults handled via xaxis range)
+df = df_all.copy()
 if df.empty:
     st.warning("Im gewählten Zeitfenster liegen keine Preispunkte vor.")
     st.stop()
@@ -430,10 +420,20 @@ fig.add_trace(go.Scatter(
     ),
 ))
 
+# default_day_start = dt.datetime.combine(today, dt.time.min).replace(tzinfo=tz_berlin)
+# default_day_end = dt.datetime.combine(today, dt.time.max).replace(tzinfo=tz_berlin)
+default_day_start = midnight_today
+default_day_end = midnight_tomorrow
+
 fig.update_layout(
     height=400,
     margin=dict(l=10, r=10, t=10, b=10),
-    xaxis_title="Zeit (lokal)",
+    xaxis=dict(
+        title="Zeit (lokal)",
+        type="date",
+        range=[default_day_start, default_day_end],
+        rangeslider=dict(visible=True),
+    ),
     yaxis_title="ct/kWh",
     hovermode="x unified",
     legend=dict(orientation="h", y=-0.25, x=0.0),
