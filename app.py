@@ -1,12 +1,35 @@
 # app.py
-import time
-from typing import Optional, Tuple, List
 import datetime as dt
+import importlib.util
+import sys
+from pathlib import Path
+from typing import Optional
+
 import pandas as pd
 import pytz
-import requests
 import streamlit as st
 import plotly.graph_objects as go
+
+
+MODULE_NAME = "price_sources"
+
+
+def _load_price_sources_module():
+    for filename in ("price-sources.py", "price_sources.py"):
+        module_path = Path(__file__).with_name(filename)
+        if not module_path.exists():
+            continue
+        spec = importlib.util.spec_from_file_location(MODULE_NAME, module_path)
+        if spec is None or spec.loader is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[MODULE_NAME] = module
+        spec.loader.exec_module(module)
+        return module
+    raise ImportError("Konnte price-sources Moduldatei nicht finden (price-sources.py oder price_sources.py).")
+
+
+price_sources = sys.modules.get(MODULE_NAME) or _load_price_sources_module()
 
 # ---------------------------------------------------------
 # Page config
@@ -14,8 +37,8 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Day-Ahead Strompreis (DE/LU)", page_icon="⚡", layout="centered")
 st.title("⚡ Day-Ahead Strompreise (DE/LU)")
 st.caption(
-    "Quelle: SMARD / EPEX Day-Ahead. Gebühren werden aus PLZ vorbefüllt (MVP-Heuristik) "
-    "und können manuell angepasst werden."
+    "Quelle: Datenquelle wählbar (SMARD.de oder ENTSO-E Day-Ahead). Gebühren werden aus PLZ vorbefüllt "
+    "(MVP-Heuristik) und können manuell angepasst werden."
 )
 
 # ---------------------------------------------------------
@@ -109,96 +132,169 @@ with st.sidebar:
 # ---------------------------------------------------------
 # Top controls
 # ---------------------------------------------------------
-col1, col2 = st.columns(2)
-with col1:
+SOURCE_OPTIONS = {
+    "SMARD (Bundesnetzagentur)": "SMARD",
+    "ENTSO-E Transparency": "ENTSOE",
+}
+
+col_source, col_view, col_res = st.columns(3)
+with col_source:
+    selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=0)
+    data_source_choice = SOURCE_OPTIONS[selected_source_label]
+with col_view:
     try:
         view_mode = st.segmented_control("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], default="Ohne Gebühren")
     except Exception:
         view_mode = st.radio("Ansicht", ["Ohne Gebühren", "Inkl. Gebühren"], index=0)
-with col2:
-    resolution_choice = st.selectbox("Auflösung", ["quarterhour", "hour"], index=0)
+with col_res:
+    resolution_disabled = data_source_choice != "SMARD"
+    resolution_choice = st.selectbox(
+        "Auflösung", ["quarterhour", "hour"], index=0, disabled=resolution_disabled
+    )
 
 include_fees = (view_mode == "Inkl. Gebühren")
 
+if "entsoe_token" not in st.session_state:
+    st.session_state.entsoe_token = ""
+
+with st.sidebar:
+    if data_source_choice == "ENTSOE":
+        st.subheader("ENTSO-E Zugang")
+        st.session_state.entsoe_token = st.text_input(
+            "API Token",
+            value=st.session_state.entsoe_token,
+            type="password",
+            help="Trage hier deinen ENTSO-E Token ein, um die Transparenzplattform abzurufen.",
+        )
+
 # ---------------------------------------------------------
-# SMARD Loader
+# Datenquellen laden
 # ---------------------------------------------------------
-SERIES_ID = "4169"
-REGION_CANDIDATES = ["DE-LU", "DE"]
-SMARD_BASE = "https://www.smard.de/app"
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Streamlit-SMARD/1.0)"}
-_last_tried: List[str] = []
+class PriceDataError(Exception):
+    """Raised when a selected data source cannot provide usable data."""
 
-class SmardError(Exception):
-    pass
 
-def _safe_get_json(url: str, timeout: int = 30) -> dict:
-    _last_tried.append(url)
-    r = requests.get(url, headers=HEADERS, timeout=timeout)
-    if r.status_code != 200:
-        raise SmardError(f"HTTP {r.status_code} für {url}")
-    try:
-        return r.json()
-    except Exception:
-        snippet = (r.text or "")[:160].replace("\n", " ")
-        ctype = r.headers.get("Content-Type", "")
-        raise SmardError(f"Kein JSON von {url}. Content-Type='{ctype}', Antwort: '{snippet}...'")
+def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> pd.DataFrame:
+    """
+    Normalise raw API data into the df_all structure:
+    - ensure a timezone-aware 'ts' column (Berlin)
+    - ensure 'ct_per_kwh' exists (derive from eur_per_mwh if needed)
+    - drop NaNs and sort by timestamp
+    """
+    if df_raw is None or df_raw.empty:
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution"])
 
-def _get_index(region: str, resolution: str) -> list[int]:
-    url = f"{SMARD_BASE}/chart_data/{SERIES_ID}/{region}/index_{resolution}.json"
-    data = _safe_get_json(url)
-    ts = data.get("timestamps") or []
-    if not ts:
-        raise SmardError(f"Keine timestamps in index_{resolution}.json ({region})")
-    return ts
+    df = df_raw.copy()
 
-def _try_load_series(region: str, resolution: str, ts: int) -> Optional[pd.DataFrame]:
-    for path in ["table_data", "chart_data"]:
-        url = f"{SMARD_BASE}/{path}/{SERIES_ID}/{region}/{SERIES_ID}_{region}_{resolution}_{ts}.json"
-        try:
-            data = _safe_get_json(url)
-            series = data.get("series")
-            if series:
-                return pd.DataFrame(series, columns=["ts_ms", "eur_per_mwh"])
-        except SmardError:
-            continue
-    return None
+    if "ts" not in df.columns:
+        if "ts_ms" in df.columns:
+            ts_series = pd.to_datetime(df["ts_ms"], unit="ms", utc=True)
+        else:
+            raise PriceDataError("Datensatz enthält keine Spalte 'ts' oder 'ts_ms'.")
+    else:
+        ts_series = df["ts"]
+        if not pd.api.types.is_datetime64tz_dtype(ts_series):
+            ts_series = pd.to_datetime(ts_series, utc=True)
+
+    if not pd.api.types.is_datetime64tz_dtype(ts_series):
+        ts_series = ts_series.dt.tz_localize("UTC")
+
+    df["ts"] = ts_series.dt.tz_convert(tz)
+
+    if "ct_per_kwh" not in df.columns:
+        if "eur_per_mwh" not in df.columns:
+            raise PriceDataError("Datensatz enthält weder 'ct_per_kwh' noch 'eur_per_mwh'.")
+        df["ct_per_kwh"] = pd.to_numeric(df["eur_per_mwh"], errors="coerce") * 0.1
+
+    df_prepared = (
+        df.dropna(subset=["ts", "ct_per_kwh"])
+        .sort_values("ts")
+        .reset_index(drop=True)
+    )
+    return df_prepared
+
+
+def normalize_resolution_hint(hint: Optional[str], default: str = "quarterhour") -> str:
+    if not hint:
+        return default
+    hint_lower = str(hint).lower()
+    if "15" in hint_lower or "quarter" in hint_lower:
+        return "quarterhour"
+    if "60" in hint_lower or "hour" in hint_lower:
+        return "hour"
+    return default
+
+
+def detect_resolution_label(df: pd.DataFrame, fallback: str = "quarterhour") -> str:
+    if df.empty:
+        return fallback
+
+    if "resolution" in df.columns:
+        res_values = df["resolution"].dropna().astype(str).str.lower()
+        if res_values.str.contains("15").any() or res_values.str.contains("quarter").any():
+            return "quarterhour"
+        if res_values.str.contains("60").any() or res_values.str.contains("hour").any():
+            return "hour"
+
+    diffs = df.sort_values("ts")["ts"].diff().dropna()
+    if not diffs.empty:
+        median_minutes = diffs.dt.total_seconds().median() / 60.0
+        if median_minutes <= 30:
+            return "quarterhour"
+        if median_minutes >= 45:
+            return "hour"
+
+    return fallback
+
 
 @st.cache_data(ttl=900)
-def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int = 12) -> Tuple[pd.DataFrame, str, str]:
-    resolutions = [prefer_resolution] + ([r for r in ["hour"] if r != prefer_resolution])
-    for region in REGION_CANDIDATES:
-        for resolution in resolutions:
-            try:
-                idx = _get_index(region, resolution)
-            except SmardError:
-                continue
-            for ts in reversed(idx[-(max_backsteps + 1):]):
-                df = _try_load_series(region, resolution, ts)
-                if df is not None and not df.empty:
-                    return df, resolution, region
-                time.sleep(0.15)
-    raise SmardError("Keine gültige SMARD-Datei gefunden (region/auflösung/ts).")
+def load_price_data(
+    source: str,
+    resolution: str,
+    entsoe_token: Optional[str],
+) -> tuple[pd.DataFrame, dict]:
+    if source == "SMARD":
+        df = price_sources.fetch_smard_day_ahead(resolution=resolution)
+        meta = {"region": "DE-LU", "raw_resolution": resolution, "source_id": "SMARD"}
+        return df, meta
+
+    if source == "ENTSOE":
+        if not entsoe_token:
+            raise PriceDataError("Für ENTSO-E wird ein API Token benötigt.")
+
+        now_utc = dt.datetime.now(dt.timezone.utc)
+        start_utc = (now_utc - dt.timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
+        end_utc = (now_utc + dt.timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
+
+        df = price_sources.fetch_entsoe_day_ahead(
+            token=entsoe_token,
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
+        meta = {"region": "DE-LU", "raw_resolution": None, "source_id": "ENTSOE"}
+        return df, meta
+
+    raise PriceDataError(f"Unbekannte Datenquelle: {source}")
 
 
 # ------------------------------------------------------
 # Call API and get data df_raw
 # ------------------------------------------------------
 try:
-    df_raw, used_resolution, used_region = load_smard_series(
-        prefer_resolution=resolution_choice, max_backsteps=12
+    df_raw, data_meta = load_price_data(
+        data_source_choice, resolution_choice, st.session_state.entsoe_token
     )
-except SmardError as e:
-    with st.expander("Diagnose: letzte getestete URLs"):
-        for u in _last_tried[-14:]:
-            st.code(u)
-    st.error(
-        "⚠️ Konnte SMARD-Daten nicht laden.\n\n"
-        f"Fehler: {e}\n\n"
-        "Tipps: später erneut versuchen (frischer Timestamp), ggf. 'Auflösung' auf 'hour' stellen, "
-        "oder Firmen-Proxy prüfen."
-    )
+except PriceDataError as exc:
+    st.error(f"⚠️ {exc}")
     st.stop()
+except Exception as exc:
+    st.error(f"⚠️ Unerwarteter Fehler beim Laden der Datenquelle: {exc}")
+    st.stop()
+
+used_region = data_meta.get("region", "DE-LU")
+resolution_fallback = normalize_resolution_hint(
+    data_meta.get("raw_resolution"), default=resolution_choice
+)
 
 # ---------------------------------------------------------
 # Data preparation
@@ -213,21 +309,16 @@ yesterday = today - dt.timedelta(days=1)
 tomorrow = today + dt.timedelta(days=1)
 
 # Convert timestamps to timezone-aware datetimes
-df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
 
 # Convert €/MWh → ct/kWh (1 €/MWh = 0.1 ct/kWh)
-df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
 
 # 1) Build full dataset with valid prices (no pre-filtering to 12→12)
-df_all = (
-    df_raw
-    .dropna(subset=["ct_per_kwh"])
-    .sort_values("ts")
-    .copy()
-)
+df_all = prepare_price_dataframe(df_raw)
 if df_all.empty:
     st.info("Keine gültigen Preisdaten verfügbar.")
     st.stop()
+
+used_resolution = detect_resolution_label(df_all, fallback=resolution_fallback)
 
 min_ts = df_all["ts"].min()
 max_ts = df_all["ts"].max()
@@ -300,7 +391,7 @@ k2.metric("⭣ min", f"{m:.2f} ct/kWh")
 k3.metric("⭡ max", f"{M:.2f} ct/kWh")
 st.caption(
     f"Durchschnitt: {avg:.2f} ct/kWh · "
-    f"Auflösung: {used_resolution} · Region: {used_region}"
+    f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
 )
 
 # 7) Plotly chart (two layers, step lines, classic colors)

@@ -14,83 +14,96 @@ TZ_BERLIN = pytz.timezone("Europe/Berlin")
 # -----------------------------
 # 1) SMARD (Bundesnetzagentur)
 # -----------------------------
-# region codes (SMARD chart data): DE-LU is "DE"
-# filters: 4169 = Day-Ahead, market price €/MWh (since Oct 2025: quarterhour available)
-# resolution: "quarterhour" or "hour"
-# Docs & parameter list: https://github.com/bundesAPI/smard-api and OpenAPI view
-# -----------------------------
+# filters: 4169 = Day-Ahead market price (€/MWh)
+# regions used by SMARD here: use "DE-LU" first, then "DE"
+SMARD_ROOT = "https://www.smard.de/app"
+SMARD_CHART = f"{SMARD_ROOT}/chart_data"
+SMARD_TABLE = f"{SMARD_ROOT}/table_data"
+SMARD_FILTER_DA = "4169"
+SMARD_REGIONS = ["DE-LU", "DE"]
+SMARD_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Streamlit-SMARD/1.0)"}
 
-SMARD_BASE = "https://www.smard.de/app/chart_data"
-SMARD_FILTER_DA = "4169"  # Day-Ahead price
-SMARD_REGION_DE = "DE"
+def _smard_get_json(url: str, timeout: int = 30) -> dict:
+    r = requests.get(url, headers=SMARD_HEADERS, timeout=timeout)
+    r.raise_for_status()
+    return r.json()
 
 def fetch_smard_day_ahead(
     resolution: Literal["quarterhour", "hour"] = "quarterhour",
-    region: str = SMARD_REGION_DE,
-    max_backsteps: int = 12,
+    max_backsteps: int = 16,
 ) -> pd.DataFrame:
     """
     Fetch Day-Ahead market prices from SMARD for DE/LU.
-    Returns a DataFrame with:
-      ts (tz-aware Europe/Berlin), eur_per_mwh (float), ct_per_kwh (float), source (str="SMARD"), resolution
-    Will walk back through available timestamp indices until it finds a table file.
+    Version 0.0.2
+    Returns DataFrame: ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="SMARD", resolution.
+    Strategy:
+      - try regions in order: DE-LU, DE
+      - get index_{resolution}.json from chart_data
+      - walk timestamps backwards, try table_data file first, then chart_data file
+      - if quarterhour fails entirely, fall back to hour
     """
-    # Step 1: get timestamp index list for this filter/region/resolution
-    idx_url = f"{SMARD_BASE}/{SMARD_FILTER_DA}/{region}/index_{resolution}.json"
-    idx = requests.get(idx_url, timeout=30)
-    idx.raise_for_status()
-    idx_json = idx.json()
-
-    # The "timestamps" array lists available dataset anchors (ms since epoch)
-    stamps = idx_json.get("timestamps") or []
-    if not stamps:
-        raise RuntimeError("SMARD: no timestamps found for Day-Ahead price index")
-
-    # Step 2: walk backwards to find a valid table_data file
     errors = []
-    for i, ts_ms in enumerate(sorted(stamps, reverse=True)[:max_backsteps]):
-        # table_data/{filter}/{region}/{filter}_{region}_{resolution}_{timestamp}.json
-        tbl_url = (
-            f"{SMARD_BASE}/table_data/{SMARD_FILTER_DA}/{region}/"
-            f"{SMARD_FILTER_DA}_{region}_{resolution}_{ts_ms}.json"
-        )
-        try:
-            r = requests.get(tbl_url, timeout=30)
-            r.raise_for_status()
-            data = r.json()
-            series = data.get("series", [])
-            if not series:
-                errors.append(f"empty series at {i} ({tbl_url})")
+
+    def _try_one_resolution(res: str) -> Optional[pd.DataFrame]:
+        for region in SMARD_REGIONS:
+            # 1) index list
+            idx_url = f"{SMARD_CHART}/{SMARD_FILTER_DA}/{region}/index_{res}.json"
+            try:
+                idx_json = _smard_get_json(idx_url)
+                stamps = idx_json.get("timestamps") or []
+                if not stamps:
+                    errors.append(f"no timestamps for {region}/{res}")
+                    continue
+            except Exception as ex:
+                errors.append(f"index err {region}/{res}: {ex}")
                 continue
 
-            # SMARD emits [ [timestamp_ms, value_eur_per_mwh], ... ]
-            rows = []
-            for row in series:
-                if not isinstance(row, list) or len(row) < 2:
-                    continue
-                ts_ms_i, value = row[0], row[1]
-                if value is None:
-                    continue
-                ts = pd.to_datetime(ts_ms_i, unit="ms", utc=True).tz_convert(TZ_BERLIN)
-                rows.append({"ts": ts, "eur_per_mwh": float(value)})
+            # 2) walk back through last N candidates
+            for ts_ms in sorted(stamps, reverse=True)[:max_backsteps]:
+                # (a) table_data (preferred)
+                tbl = f"{SMARD_TABLE}/{SMARD_FILTER_DA}/{region}/{SMARD_FILTER_DA}_{region}_{res}_{ts_ms}.json"
+                # (b) chart_data (fallback)
+                ch  = f"{SMARD_CHART}/{SMARD_FILTER_DA}/{region}/{SMARD_FILTER_DA}_{region}_{res}_{ts_ms}.json"
+                for url in (tbl, ch):
+                    try:
+                        data = _smard_get_json(url)
+                        series = data.get("series") or []
+                        if not series:
+                            errors.append(f"empty series {region}/{res}/{ts_ms} ({'table' if url==tbl else 'chart'})")
+                            continue
+                        rows = []
+                        for row in series:
+                            if not isinstance(row, list) or len(row) < 2:
+                                continue
+                            ts_i, val = row[0], row[1]
+                            if val is None:
+                                continue
+                            ts = pd.to_datetime(ts_i, unit="ms", utc=True).tz_convert(TZ_BERLIN)
+                            rows.append({"ts": ts, "eur_per_mwh": float(val)})
+                        if not rows:
+                            errors.append(f"no valid rows {region}/{res}/{ts_ms}")
+                            continue
+                        df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
+                        df["ct_per_kwh"] = df["eur_per_mwh"] * 0.1
+                        df["source"] = "SMARD"
+                        df["resolution"] = res
+                        return df
+                    except Exception as ex:
+                        errors.append(f"{type(ex).__name__} {region}/{res}/{ts_ms}: {ex}")
+                        continue
+        return None
 
-            if not rows:
-                errors.append(f"no non-null rows at {i} ({tbl_url})")
-                continue
-
-            df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
-            df["ct_per_kwh"] = df["eur_per_mwh"] * 0.1
-            df["source"] = "SMARD"
-            df["resolution"] = resolution
+    # Try preferred resolution, then fallback
+    for res in [resolution, "hour"] if resolution != "hour" else ["hour"]:
+        df = _try_one_resolution(res)
+        if df is not None:
             return df
 
-        except Exception as ex:
-            errors.append(f"{type(ex).__name__} at {i}: {ex}")
-
     raise RuntimeError(
-        "SMARD: Could not find a valid Day-Ahead table_data file. "
+        "SMARD: Could not find a valid Day-Ahead file. "
         f"Tried {len(errors)} candidates; last errors: {errors[-3:]}"
     )
+
 
 
 # ----------------------------------------
