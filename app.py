@@ -180,6 +180,10 @@ def load_smard_series(prefer_resolution: str = "quarterhour", max_backsteps: int
                 time.sleep(0.15)
     raise SmardError("Keine gültige SMARD-Datei gefunden (region/auflösung/ts).")
 
+
+# ------------------------------------------------------
+# Call API and get data df_raw
+# ------------------------------------------------------
 try:
     df_raw, used_resolution, used_region = load_smard_series(
         prefer_resolution=resolution_choice, max_backsteps=12
@@ -199,38 +203,81 @@ except SmardError as e:
 # ---------------------------------------------------------
 # Data preparation
 # ---------------------------------------------------------
-tz_berlin = pytz.timezone("Europe/Berlin")
-df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
-df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
-
 # ---------------------------------------------------------
-# Zeitfenster: ab aktuellem Mittag (12:00) bis nächstes Mittag (12:00)
+# Keep ALL valid datapoints, then offer a slider to choose the visible window
 # ---------------------------------------------------------
 tz_berlin = pytz.timezone("Europe/Berlin")
 now = dt.datetime.now(tz=tz_berlin)
 today = now.date()
+yesterday = today - dt.timedelta(days=1)
 tomorrow = today + dt.timedelta(days=1)
 
-# Define window: from today's 12:00 to tomorrow's 12:00
-start_window = tz_berlin.localize(dt.datetime.combine(today, dt.time(12, 0)))
-end_window = start_window + dt.timedelta(days=1)
-
+# Convert timestamps to timezone-aware datetimes
 df_raw["ts"] = pd.to_datetime(df_raw["ts_ms"], unit="ms", utc=True).dt.tz_convert("Europe/Berlin")
+
+# Convert €/MWh → ct/kWh (1 €/MWh = 0.1 ct/kWh)
 df_raw["ct_per_kwh"] = df_raw["eur_per_mwh"] * 0.1
 
-# Keep only rows in this 24-h auction window
-df = df_raw[(df_raw["ts"] >= start_window) & (df_raw["ts"] < end_window)].copy()
-if df.empty:
-    st.info("Für dieses Zeitfenster liegen noch keine Day-Ahead-Daten vor.")
+# 1) Build full dataset with valid prices (no pre-filtering to 12→12)
+df_all = (
+    df_raw
+    .dropna(subset=["ct_per_kwh"])
+    .sort_values("ts")
+    .copy()
+)
+if df_all.empty:
+    st.info("Keine gültigen Preisdaten verfügbar.")
     st.stop()
 
-# ---------------------------------------------------------
-# Komponenten: Spot + Gebühren (inkl. MwSt)
-# ---------------------------------------------------------
+min_ts = df_all["ts"].min()
+max_ts = df_all["ts"].max()
+
+# 2) Define your *default* Day-Ahead window
+noon_today = tz_berlin.localize(dt.datetime.combine(today, dt.time(12, 0)))
+noon_yesterday = tz_berlin.localize(dt.datetime.combine(yesterday, dt.time(12, 0)))
+noon_tomorrow  = tz_berlin.localize(dt.datetime.combine(tomorrow,  dt.time(12, 0)))
+
+if now < noon_today:
+    # before 12:00 → yesterday 12:00 → today 12:00
+    start_window = noon_yesterday
+    end_window   = noon_today
+else:
+    # at/after 12:00 → today 12:00 → tomorrow 12:00
+    start_window = noon_today
+    end_window   = noon_tomorrow
+
+# Clamp defaults to available data (so the slider has valid defaults even if data ends earlier)
+default_start = max(min_ts, start_window)
+default_end   = min(max_ts, end_window)
+if default_start > default_end:
+    # Fallback: if DA window not in data at all, default to full available range
+    default_start, default_end = min_ts, max_ts
+
+# 3) Slider spans the full available range; defaults are 12→12
+step_td = dt.timedelta(minutes=15 if used_resolution == "quarterhour" else 60)
+with st.sidebar:
+    st.subheader("Sichtbarer Zeitraum")
+    t_start, t_end = st.slider(
+        "Zeitfenster",
+        min_value=min_ts,
+        max_value=max_ts,
+        value=(default_start, default_end),
+        step=step_td,
+        format="DD.MM.YY HH:mm",
+    )
+
+# 4) Filter ONLY the view to the slider (dataset itself stays complete)
+t_start_ts = pd.Timestamp(t_start)
+t_end_ts   = pd.Timestamp(t_end)
+df = df_all[(df_all["ts"] >= t_start_ts) & (df_all["ts"] <= t_end_ts)].copy()
+if df.empty:
+    st.warning("Im gewählten Zeitfenster liegen keine Preispunkte vor.")
+    st.stop()
+
+# 5) Compute the two chart layers (Börsenstrompreis, Gebühren inkl. MwSt) on the filtered view
 fees = st.session_state.fees
 df["spot_ct"] = df["ct_per_kwh"]
 
-# Total fees incl. VAT (surcharges + VAT on surcharges + VAT on spot)
 fees_no_vat = (
     fees["stromsteuer_ct"]
     + fees["umlagen_ct"]
@@ -240,9 +287,7 @@ fees_no_vat = (
 df["fees_incl_vat_ct"] = (fees_no_vat + df["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
 df["total_ct"] = df["spot_ct"] + df["fees_incl_vat_ct"]
 
-# ---------------------------------------------------------
-# KPIs (Gesamtpreis oder Spot)
-# ---------------------------------------------------------
+# 6) KPIs based on the filtered view (respects slider)
 metric_col = "total_ct" if include_fees else "spot_ct"
 now_local = pd.Timestamp.now(tz="Europe/Berlin")
 current_idx = min(df["ts"].searchsorted(now_local, side="left"), len(df) - 1)
@@ -258,17 +303,16 @@ st.caption(
     f"Auflösung: {used_resolution} · Region: {used_region}"
 )
 
-# ---------------------------------------------------------
-# Plotly chart: Börsenstrompreis + Gebühren inkl. MwSt (steps)
-# ---------------------------------------------------------
+# 7) Plotly chart (two layers, step lines, classic colors)
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
     x=df["ts"], y=df["spot_ct"],
     name="Börsenstrompreis",
     mode="lines",
-    line_shape="hv",  # step-like
-    line=dict(width=1.5, color="#1f77b4"),
+    line_shape="hv",
+    line=dict(width=0.8, color="#1f77b4"),
+    stackgroup="one",
     hovertemplate=(
         "Zeit: %{x|%d.%m %H:%M}<br>"
         "Börsenstrompreis: %{y:.2f} ct/kWh"
@@ -279,21 +323,21 @@ fig.add_trace(go.Scatter(
 
 fig.add_trace(go.Scatter(
     x=df["ts"], y=df["fees_incl_vat_ct"],
-    name="Gebühren inkl. MwSt",
+    name="Gebühren (inkl. MwSt)",
     mode="lines",
     line_shape="hv",
-    line=dict(width=1.5, color="#ff7f0e"),
+    line=dict(width=0.8, color="#ff7f0e"),
     stackgroup="one",
     hovertemplate=(
         "Zeit: %{x|%d.%m %H:%M}<br>"
-        "Gebühren inkl. MwSt: %{y:.2f} ct/kWh"
+        "Gebühren (inkl. MwSt): %{y:.2f} ct/kWh"
         "<br>Gesamtpreis: %{customdata:.2f} ct/kWh<extra></extra>"
     ),
     customdata=df["total_ct"],
 ))
 
 fig.update_layout(
-    height=380,
+    height=400,
     margin=dict(l=10, r=10, t=10, b=10),
     xaxis_title="Zeit (lokal)",
     yaxis_title="ct/kWh",
@@ -303,10 +347,8 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# ---------------------------------------------------------
-# Footer
-# ---------------------------------------------------------
+# Footer about slider defaults vs full range (optional)
 st.caption(
-    f"Fenster: {start_window.strftime('%d.%m %H:%M')} – {end_window.strftime('%d.%m %H:%M')} · "
-    "Gestapelt: Börsenstrompreis + Gebühren (inkl. MwSt)"
+    f"Standard-Fenster: {start_window.strftime('%d.%m %H:%M')} – {(start_window + dt.timedelta(days=1)).strftime('%d.%m %H:%M')} · "
+    "Den Schieberegler kannst du auf die komplette verfügbare Datenreichweite ausdehnen."
 )
