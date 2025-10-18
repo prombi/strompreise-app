@@ -126,7 +126,7 @@ with col_source:
     selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=0)
     data_source_choice = SOURCE_OPTIONS[selected_source_label]
 with col_view:
-    include_fees = st.toggle("Inkl. Gebühren", value=False)
+    include_fees = st.toggle("Inkl. Gebühren", value=True)
 with col_res:
     resolution_disabled = data_source_choice != "SMARD"
     resolution_is_quarterhour = st.toggle(
@@ -497,7 +497,13 @@ fig.update_layout(
     ),
     yaxis_title="ct/kWh",
     hovermode="x unified",
-    legend=dict(orientation="h", y=-0.25, x=0.0),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1.0,
+    ),
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
     shapes=day_shapes,
 )
