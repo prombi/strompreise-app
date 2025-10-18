@@ -93,7 +93,7 @@ SOURCE_OPTIONS = {
 }
 col_source, col_view, col_res = st.columns(3)
 with col_source:
-    selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=0)
+    selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=1)
     data_source_choice = SOURCE_OPTIONS[selected_source_label]
 with col_view:
     include_fees = st.toggle("Inkl. Gebühren", value=True)
