@@ -107,27 +107,21 @@ with col_res:
     )
     resolution_choice = "quarterhour" if resolution_is_quarterhour else "hour"
 if "entsoe_token" not in st.session_state:
-    st.session_state.entsoe_token = ""
+    st.session_state.entsoe_token = st.secrets.get("entsoe_token", "")
 if "entsoe_days_back" not in st.session_state:
     st.session_state.entsoe_days_back = 14
 if "entsoe_days_forward" not in st.session_state:
     st.session_state.entsoe_days_forward = 2
 with st.sidebar:
     if data_source_choice == "ENTSOE":
-        st.subheader("ENTSO-E Zugang")
-        st.session_state.entsoe_token = st.text_input(
-            "API Token",
-            value=st.session_state.entsoe_token,
-            type="password",
-            help="Trage hier deinen ENTSO-E Token ein, um die Transparenzplattform abzurufen.",
-        )
-        st.session_state.entsoe_days_back = st.number_input(
+        st.subheader("ENTSO-E Einstellungen")
+        st.session_state.entsoe_days_back = st.slider(
             "Tage zurück",
             min_value=1,
             max_value=90,
             value=st.session_state.entsoe_days_back,
         )
-        st.session_state.entsoe_days_forward = st.number_input(
+        st.session_state.entsoe_days_forward = st.slider(
             "Tage voraus",
             min_value=1,
             max_value=7,
