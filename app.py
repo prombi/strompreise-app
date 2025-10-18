@@ -355,6 +355,42 @@ y_max = max(y_max, 1.0)
 padding = y_max * 0.05
 fig = go.Figure()
 
+# --- Generate vertical lines for days, midday, and now ---
+day_shapes = []
+
+# Iterate through each day in the visible range to create day/midday markers
+loop_day_start = view_start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+current_ts = loop_day_start
+while current_ts <= view_end:
+    # Midnight line (solid)
+    day_shapes.append(go.layout.Shape(
+        type="line",
+        x0=current_ts, x1=current_ts, y0=0, y1=1, yref="paper",
+        line=dict(color="rgba(128, 128, 128, 0.5)", width=1)
+    ))
+    # Midday line (dashed)
+    midday_ts = current_ts.replace(hour=12)
+    if midday_ts < view_end:
+        day_shapes.append(go.layout.Shape(
+            type="line",
+            x0=midday_ts, x1=midday_ts, y0=0, y1=1, yref="paper",
+            line=dict(color="rgba(128, 128, 128, 0.5)", width=1, dash="dash")
+        ))
+    current_ts += dt.timedelta(days=1)
+
+# Add a special line for the current time ("now")
+now_local = dt.datetime.now(tz=tz_berlin)
+if view_start <= now_local <= view_end:
+    day_shapes.append(go.layout.Shape(
+        type="line",
+        x0=now_local, x1=now_local, y0=0, y1=1, yref="paper",
+        line=dict(color="purple", width=1.5, dash="dot"),
+        name="Jetzt"
+    ))
+# --- End of line generation ---
+
+
 fig.add_trace(go.Scatter(
     x=time_series,
     y=spot_series.tolist(),
@@ -405,6 +441,7 @@ fig.update_layout(
         x=1.0,
     ),
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
+    shapes=day_shapes,
 )
 st.plotly_chart(fig, use_container_width=True)
 start_naive, end_naive = st.slider(
