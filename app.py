@@ -1,36 +1,14 @@
 # app.py
 import datetime as dt
-import importlib.util
-import sys
-from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import pytz
 import streamlit as st
 import plotly.graph_objects as go
-from streamlit_plotly_events import plotly_events
 
+import price_sources
 
-MODULE_NAME = "price_sources"
-
-
-def _load_price_sources_module():
-    for filename in ("price-sources.py", "price_sources.py"):
-        module_path = Path(__file__).with_name(filename)
-        if not module_path.exists():
-            continue
-        spec = importlib.util.spec_from_file_location(MODULE_NAME, module_path)
-        if spec is None or spec.loader is None:
-            continue
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[MODULE_NAME] = module
-        spec.loader.exec_module(module)
-        return module
-    raise ImportError("Konnte price-sources Moduldatei nicht finden (price-sources.py oder price_sources.py).")
-
-
-price_sources = sys.modules.get(MODULE_NAME) or _load_price_sources_module()
 
 
 def _is_timezone_aware(values) -> bool:
@@ -379,8 +357,7 @@ time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
 fees_hover = fees_series.round(6).tolist()
 
 initial_view = (default_start, default_end)
-if "view_range" not in st.session_state:
-    st.session_state.view_range = initial_view
+
 
 def _normalize_ts(value) -> pd.Timestamp:
     ts = pd.to_datetime(value)
@@ -390,16 +367,35 @@ def _normalize_ts(value) -> pd.Timestamp:
         ts = ts.tz_convert(tz_berlin)
     return ts
 
-view_start, view_end = st.session_state.view_range
-view_start = _normalize_ts(view_start)
-view_end = _normalize_ts(view_end)
+
+local_min = _normalize_ts(min_ts).floor('H')
+local_max = _normalize_ts(max_ts).ceil('H')
+default_start_local = _normalize_ts(initial_view[0]).floor('H')
+default_end_local = _normalize_ts(initial_view[1]).ceil('H')
+
+slider_min = local_min.to_pydatetime().replace(tzinfo=None)
+slider_max = local_max.to_pydatetime().replace(tzinfo=None)
+slider_default = (
+    default_start_local.to_pydatetime().replace(tzinfo=None),
+    default_end_local.to_pydatetime().replace(tzinfo=None),
+)
+
+start_naive, end_naive = st.slider(
+    'Sichtbaren Zeitraum wählen',
+    min_value=slider_min,
+    max_value=slider_max,
+    value=slider_default,
+    step=dt.timedelta(hours=1),
+    format='DD.MM.YYYY HH:mm',
+)
+
+view_start = _normalize_ts(start_naive)
+view_end = _normalize_ts(end_naive)
 view_start = max(min_ts, view_start)
 view_end = min(max_ts, view_end)
 if view_start >= view_end:
-    view_start, view_end = initial_view
-st.session_state.view_range = (view_start, view_end)
+    view_end = min(max_ts, view_start + pd.Timedelta(hours=1))
 
-# 7) Plotly chart (two layers, step lines, classic colors)
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
@@ -505,54 +501,8 @@ fig.update_layout(
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
     shapes=day_shapes,
 )
-events = plotly_events(
-    fig,
-    click_event=False,
-    select_event=False,
-    hover_event=False,
-    override_height=420,
-    relayout_event=True,
-    key="price_chart",
-)
 
-new_start_raw = new_end_raw = None
-for event in events or []:
-    if not isinstance(event, dict):
-        continue
-    if "range" in event:
-        rng = event["range"]
-        if isinstance(rng, dict):
-            x_range = rng.get("x")
-            if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
-                new_start_raw, new_end_raw = x_range
-        elif isinstance(rng, (list, tuple)) and len(rng) == 2:
-            new_start_raw, new_end_raw = rng
-    if new_start_raw is None and "xaxis.range[0]" in event and "xaxis.range[1]" in event:
-        new_start_raw = event["xaxis.range[0]"]
-        new_end_raw = event["xaxis.range[1]"]
-    if new_start_raw is None and "xaxis.range" in event:
-        x_range = event["xaxis.range"]
-        if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
-            new_start_raw, new_end_raw = x_range
-    if new_start_raw is None and "data" in event:
-        data = event["data"]
-        if isinstance(data, dict):
-            x_range = data.get("xaxis.range")
-            if isinstance(x_range, (list, tuple)) and len(x_range) == 2:
-                new_start_raw, new_end_raw = x_range
-
-if new_start_raw and new_end_raw:
-    new_start = _normalize_ts(new_start_raw)
-    new_end = _normalize_ts(new_end_raw)
-    new_start = max(min_ts, new_start)
-    new_end = min(max_ts, new_end)
-    if new_start < new_end and (new_start, new_end) != st.session_state.view_range:
-        st.session_state.view_range = (new_start, new_end)
-        st.experimental_rerun()
-
-view_start, view_end = st.session_state.view_range
-view_start = _normalize_ts(view_start)
-view_end = _normalize_ts(view_end)
+st.plotly_chart(fig, use_container_width=True)
 
 df_view = df_chart[(df_chart["ts"] >= view_start) & (df_chart["ts"] <= view_end)].copy()
 
@@ -571,15 +521,16 @@ with stats_container:
 
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("aktuell", f"{current_price:.1f} ct/kWh")
-        c2.metric("average", f"{avg:.1f} ct/kWh")
-        c3.metric("⭣ min", f"{min_price:.1f} ct/kWh")
-        c4.metric("⭡ max", f"{max_price:.1f} ct/kWh")
+        c2.metric("Durchschnitt", f"{avg:.1f} ct/kWh")
+        c3.metric("min", f"{min_price:.1f} ct/kWh")
+        c4.metric("max", f"{max_price:.1f} ct/kWh")
+        st.caption(
+            f"Sichtbarer Bereich: {view_start.strftime('%d.%m %H:%M')} – {view_end.strftime('%d.%m %H:%M')}"
+        )
         st.caption(
             f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
         )
-
-# Footer about slider defaults vs full range (optional)
 st.caption(
-    f"Standard-Fenster: {start_window.strftime('%d.%m %H:%M')} – {(start_window + dt.timedelta(days=1)).strftime('%d.%m %H:%M')} · "
+    f"Standard-Fenster: {start_window.strftime('%d.%m %H:%M')} – {(start_window + dt.timedelta(days=1)).strftime('%d.%m %H:%M')} "
     "Nutze den Range-Slider unter dem Diagramm, um andere Zeitbereiche auszuwählen."
 )

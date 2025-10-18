@@ -160,6 +160,7 @@ def fetch_entsoe_day_ahead(
         raise PermissionError("ENTSO-E: Unauthorized (check token)")
     resp.raise_for_status()
 
+    print(resp.content) # debug
     # "No matching data" comes back as an Acknowledgement document (HTTP 200)
     if b"Acknowledgement_MarketDocument" in resp.content and b"No matching data" in resp.content:
         return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution"])
