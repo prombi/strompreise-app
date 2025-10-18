@@ -108,6 +108,10 @@ with col_res:
     resolution_choice = "quarterhour" if resolution_is_quarterhour else "hour"
 if "entsoe_token" not in st.session_state:
     st.session_state.entsoe_token = ""
+if "entsoe_days_back" not in st.session_state:
+    st.session_state.entsoe_days_back = 14
+if "entsoe_days_forward" not in st.session_state:
+    st.session_state.entsoe_days_forward = 2
 with st.sidebar:
     if data_source_choice == "ENTSOE":
         st.subheader("ENTSO-E Zugang")
@@ -116,6 +120,18 @@ with st.sidebar:
             value=st.session_state.entsoe_token,
             type="password",
             help="Trage hier deinen ENTSO-E Token ein, um die Transparenzplattform abzurufen.",
+        )
+        st.session_state.entsoe_days_back = st.number_input(
+            "Tage zurück",
+            min_value=1,
+            max_value=90,
+            value=st.session_state.entsoe_days_back,
+        )
+        st.session_state.entsoe_days_forward = st.number_input(
+            "Tage voraus",
+            min_value=1,
+            max_value=7,
+            value=st.session_state.entsoe_days_forward,
         )
 # ---------------------------------------------------------
 # Datenquellen laden
@@ -185,6 +201,8 @@ def load_price_data(
     source: str,
     resolution: str,
     entsoe_token: Optional[str],
+    entsoe_days_back: int,
+    entsoe_days_forward: int,
 ) -> tuple[pd.DataFrame, dict]:
     if source == "SMARD":
         df = price_sources.fetch_smard_day_ahead(resolution=resolution)
@@ -194,8 +212,8 @@ def load_price_data(
         if not entsoe_token:
             raise PriceDataError("Für ENTSO-E wird ein API Token benötigt.")
         now_utc = dt.datetime.now(dt.timezone.utc)
-        start_utc = (now_utc - dt.timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
-        end_utc = (now_utc + dt.timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
+        start_utc = (now_utc - dt.timedelta(days=entsoe_days_back)).replace(minute=0, second=0, microsecond=0)
+        end_utc = (now_utc + dt.timedelta(days=entsoe_days_forward)).replace(minute=0, second=0, microsecond=0)
         df = price_sources.fetch_entsoe_day_ahead(
             token=entsoe_token,
             start_utc=start_utc,
@@ -209,7 +227,11 @@ def load_price_data(
 # ------------------------------------------------------
 try:
     df_raw, data_meta = load_price_data(
-        data_source_choice, resolution_choice, st.session_state.entsoe_token
+        source=data_source_choice,
+        resolution=resolution_choice,
+        entsoe_token=st.session_state.entsoe_token,
+        entsoe_days_back=st.session_state.entsoe_days_back,
+        entsoe_days_forward=st.session_state.entsoe_days_forward,
     )
 except PriceDataError as exc:
     st.error(f"⚠️ {exc}")
