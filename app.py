@@ -309,10 +309,10 @@ def _normalize_ts(value) -> pd.Timestamp:
     else:
         ts = ts.tz_convert(tz_berlin)
     return ts
-local_min = _normalize_ts(min_ts).floor('H')
-local_max = _normalize_ts(max_ts).ceil('H')
-default_start_local = _normalize_ts(initial_view[0]).floor('H')
-default_end_local = _normalize_ts(initial_view[1]).ceil('H')
+local_min = _normalize_ts(min_ts).floor('h')
+local_max = _normalize_ts(max_ts).ceil('h')
+default_start_local = _normalize_ts(initial_view[0]).floor('h')
+default_end_local = _normalize_ts(initial_view[1]).ceil('h')
 slider_min = local_min.to_pydatetime().replace(tzinfo=None)
 slider_max = local_max.to_pydatetime().replace(tzinfo=None)
 slider_default = (
