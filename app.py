@@ -6,6 +6,28 @@ import pytz
 import streamlit as st
 import plotly.graph_objects as go
 import price_sources
+
+DEFAULT_PLZ = "82340"
+FEE_WIDGET_KEYS = {
+    "umlagen_ct": ("fee_umlagen", float),
+    "konzessionsabgabe_ct": ("fee_konzessionsabgabe", float),
+    "netzentgelt_ct": ("fee_netzentgelt", float),
+    "mwst": ("fee_mwst", int),
+}
+
+
+def _sync_fee_widget_state() -> None:
+    """Keep the fee input widgets aligned with the current fee dictionary."""
+    for field, (key, caster) in FEE_WIDGET_KEYS.items():
+        st.session_state[key] = caster(st.session_state.fees[field])
+
+
+def _ensure_fee_widget_defaults() -> None:
+    """Populate widget session state with the current fee values when missing."""
+    for field, (key, caster) in FEE_WIDGET_KEYS.items():
+        if key not in st.session_state:
+            st.session_state[key] = caster(st.session_state.fees[field])
+
 def _is_timezone_aware(values) -> bool:
     dtype = getattr(values, "dtype", None)
     return isinstance(dtype, pd.DatetimeTZDtype)
@@ -70,21 +92,49 @@ def compute_price(ct_per_kwh: float, fees: dict, include_fees: bool) -> float:
 with st.sidebar:
     st.header("Gebühren einstellen")
     if "plz" not in st.session_state:
-        st.session_state.plz = "82340"
+        st.session_state.plz = DEFAULT_PLZ
     if "fees" not in st.session_state:
         st.session_state.fees = estimate_fees_from_plz(st.session_state.plz)
+    _ensure_fee_widget_defaults()
     st.text_input("PLZ", key="plz")
+    col_apply_fees, col_reset_fees = st.columns(2)
+    if col_apply_fees.button("Gebühren aus PLZ", use_container_width=True):
+        st.session_state.fees = estimate_fees_from_plz(st.session_state.plz)
+        _sync_fee_widget_state()
+    if col_reset_fees.button("Gebühren zurücksetzen", use_container_width=True):
+        st.session_state.fees = estimate_fees_from_plz(DEFAULT_PLZ)
+        _sync_fee_widget_state()
     st.session_state.fees["umlagen_ct"] = st.number_input(
-        "Umlagen gesamt (ct/kWh)", 0.0, 10.0, float(st.session_state.fees.get("umlagen_ct", 2.651)), 0.001
+        "Umlagen gesamt (ct/kWh)",
+        min_value=0.0,
+        max_value=10.0,
+        value=float(st.session_state["fee_umlagen"]),
+        step=0.001,
+        key="fee_umlagen",
     )
     st.session_state.fees["konzessionsabgabe_ct"] = st.number_input(
-        "Konzessionsabgabe (ct/kWh)", 0.0, 5.0, float(st.session_state.fees.get("konzessionsabgabe_ct", 1.59)), 0.01
+        "Konzessionsabgabe (ct/kWh)",
+        min_value=0.0,
+        max_value=5.0,
+        value=float(st.session_state["fee_konzessionsabgabe"]),
+        step=0.01,
+        key="fee_konzessionsabgabe",
     )
     st.session_state.fees["netzentgelt_ct"] = st.number_input(
-        "Netzentgelt pauschal (ct/kWh)", 0.0, 50.0, float(st.session_state.fees.get("netzentgelt_ct", 8.0)), 0.1
+        "Netzentgelt pauschal (ct/kWh)",
+        min_value=0.0,
+        max_value=50.0,
+        value=float(st.session_state["fee_netzentgelt"]),
+        step=0.1,
+        key="fee_netzentgelt",
     )
     st.session_state.fees["mwst"] = st.number_input(
-        "MwSt (%)", 0, 25, int(st.session_state.fees.get("mwst", 19)), 1
+        "MwSt (%)",
+        min_value=0,
+        max_value=25,
+        value=int(st.session_state["fee_mwst"]),
+        step=1,
+        key="fee_mwst",
     )
 # ---------------------------------------------------------
 # Top controls
