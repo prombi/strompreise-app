@@ -35,22 +35,24 @@ def estimate_fees_from_plz(plz: str):
     elif prefix in mid_cities:
         kav = 1.99
     else:
-        kav = 1.59
+        kav = 1.32              # 82340 Feldafing
     north_east = {"01","02","03","04","10","11","12","13","14","17","18","19","23","24"}
     south = {"80","81","82","83","84","85","86","87","88","89","90","91"}
     if prefix in south:
-        netzentgelt = 7.5
+        netzentgelt = 7.35      # 82340 Feldafing
     elif prefix in north_east:
         netzentgelt = 9.0
     else:
         netzentgelt = 8.0
+
     return {
         "stromsteuer_ct": 2.05,
-        "umlagen_ct": 2.651,
-        "konzessionsabgabe_ct": kav,
+        "umlagen_ct": 0.28+0.00+0.00+0.82+1.56,     # KWKG- + Abschalt- + EEG- + Offshore- + §19 StromNEV- Umlagen; previously 2.651,
+        "konzessionsabgabe_ct": kav, 
         "netzentgelt_ct": netzentgelt,
         "mwst": 19
     }
+
 def compute_price(ct_per_kwh: float, fees: dict, include_fees: bool) -> float:
     if not include_fees:
         return ct_per_kwh
