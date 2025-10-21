@@ -527,7 +527,13 @@ if col_prev.button('⟲ –24h'):
     st.session_state['range_slider_pending'] = (new_start, new_end)
     st.rerun()
 if col_reset.button('Standardfenster'):
-    st.session_state['range_slider_pending'] = slider_default
+    # Re-calculate the ideal default window and clamp it to the slider's bounds
+    ideal_start = tz_berlin.localize(dt.datetime.combine(today, dt.time(0, 0)))
+    ideal_end = ideal_start + dt.timedelta(days=1)
+    
+    clamped_start = max(slider_min, ideal_start.replace(tzinfo=None))
+    clamped_end = min(slider_max, ideal_end.replace(tzinfo=None))
+    st.session_state['range_slider_pending'] = (clamped_start, clamped_end)
     st.rerun()
 if col_next.button('+24h ⟳'):
     new_start = current_start + dt.timedelta(hours=24)
