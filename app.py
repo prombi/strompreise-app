@@ -367,6 +367,7 @@ stats_container = st.container()
 fees = st.session_state.fees
 df_chart = df_all.copy()
 df_chart["spot_ct"] = df_chart["ct_per_kwh"]
+
 fees_no_vat = (
     fees["stromsteuer_ct"]
     + fees["umlagen_ct"]
@@ -379,7 +380,7 @@ spot_series = df_chart["spot_ct"].astype(float)
 total_series = df_chart["total_ct"].astype(float)
 fees_series = df_chart["fees_incl_vat_ct"].astype(float)
 time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
-# time_series = [ts.isoformat() for ts in df_chart["ts"].dt.tz_convert(tz_berlin)]
+position_series = df_chart["position"].astype(str).tolist() if "position" in df_chart else ["1"] * len(df_chart)
 # fees_hover = fees_series.to_numpy()
 fees_hover = fees_series.round(6).tolist()
 initial_view = (default_start, default_end)
@@ -469,32 +470,34 @@ if view_start <= now_local <= view_end:
     ))
 # --- End of line generation ---
 
+# --- Plotting Logic ---
+
+# Base hovertemplate for spot price
+spot_hovertemplate = "Börsenstrompreis: %{y:.1f} ct/kWh<extra></extra>"
+custom_data_spot = None
+
+# If the source is ENTSOE-related, add the position to the hover text
+if data_source_choice.startswith("ENTSOE"):
+    spot_hovertemplate = (
+        "Börsenstrompreis: %{y:.1f} ct/kWh<br>" +
+        "ENTSO-E Position: %{customdata}<extra></extra>"
+    )
+    custom_data_spot = position_series
 
 fig.add_trace(go.Scatter(
-    x=time_series,
-    y=spot_series.tolist(),
-    name="Börsenstrompreis",
-    mode="lines",
-    line_shape="hv", # First horizontal, then vertical
-    line=dict(width=0.8, color="#1f77b4"),
-    fill="tozeroy",
-    fillcolor="rgba(31, 119, 180, 0.25)",
-    hovertemplate="Börsenstrompreis: %{y:.1f} ct/kWh<extra></extra>",
+    x=time_series, y=spot_series, name="Börsenstrompreis", mode="lines",
+    line_shape="hv", line=dict(width=0.8, color="#1f77b4"),
+    fill="tozeroy", fillcolor="rgba(31, 119, 180, 0.25)",
+    customdata=custom_data_spot,
+    hovertemplate=spot_hovertemplate,
 ))
 
 fig.add_trace(go.Scatter(
-    x=time_series,
-    y=total_series.tolist(),
-    name="Gesamtpreis",
-    mode="lines",
-    line_shape="hv", # First horizontal, then vertical
-    line=dict(width=1.2, color="#d62728"),
-    fill="tonexty",
-    fillcolor="rgba(255, 127, 14, 0.35)",
+    x=time_series, y=total_series, name="Gesamtpreis", mode="lines",
+    line_shape="hv", line=dict(width=1.2, color="#d62728"),
+    fill="tonexty", fillcolor="rgba(255, 127, 14, 0.35)",
     customdata=fees_hover,
-    hovertemplate=(
-        "Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren (inkl. MwSt): %{customdata:.1f} ct/kWh<extra></extra>"
-    ),
+    hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>",
 ))
 
 fig.update_layout(
