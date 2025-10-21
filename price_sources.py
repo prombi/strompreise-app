@@ -7,6 +7,8 @@ from typing import Literal, Optional
 import pandas as pd
 import pytz
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from xml.etree import ElementTree as ET
 
 TZ_BERLIN = pytz.timezone("Europe/Berlin")
@@ -137,11 +139,18 @@ def fetch_entsoe_day_ahead(
     start_utc: dt.datetime,
     end_utc: dt.datetime,
     eic_bzn: str = DE_LU_EIC,
+    mrid: Optional[str | list[str]] = None,
+    position: Optional[str | list[str]] = None,
 ) -> pd.DataFrame:
     """
     Fetch Day-Ahead prices via ENTSO-E REST (XML), returning:
-      ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="ENTSOE", resolution ("PT15M"/"PT60M").
+      ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="ENTSOE",
+      resolution ("PT15M"/"PT60M"), and mrid.
     start_utc / end_utc must be tz-aware in any tz (converted to UTC for the query).
+    eic_bzn: Bidding zone EIC code (e.g., DE-LU).
+    mrid: If specified, filters for the TimeSeries with this specific mRID or list of mRIDs.
+    position: If specified, filters for the TimeSeries with this specific
+              classificationSequence_AttributeInstanceComponent.position.
     """
     if start_utc.tzinfo is None or end_utc.tzinfo is None:
         raise ValueError("start_utc and end_utc must be timezone-aware")
@@ -155,14 +164,28 @@ def fetch_entsoe_day_ahead(
         "periodEnd": _fmt_utc(end_utc),
     }
 
-    resp = requests.get(ENTSOE_BASE, params=params, timeout=45)
+    # --- Retry logic for network resilience ---
+    retry_strategy = Retry(
+        total=3,  # Total number of retries
+        backoff_factor=1,  # Wait 1s, 2s, 4s between retries
+        status_forcelist=[429, 500, 502, 503, 504], # Status codes to retry on
+        allowed_methods=["GET"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("https://", adapter)
+
+    try:
+        resp = session.get(ENTSOE_BASE, params=params, timeout=60) # Increased timeout to 60s
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"ENTSO-E: Network request failed after retries: {e}")
     if resp.status_code == 401:
         raise PermissionError("ENTSO-E: Unauthorized (check token)")
     resp.raise_for_status()
 
     # "No matching data" comes back as an Acknowledgement document (HTTP 200)
     if b"Acknowledgement_MarketDocument" in resp.content and b"No matching data" in resp.content:
-        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution"])
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
 
     # Parse XML
     ns = {"ns": "urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3"}
@@ -171,10 +194,41 @@ def fetch_entsoe_day_ahead(
     except ET.ParseError as ex:
         raise RuntimeError(f"ENTSO-E: XML parse error: {ex}")
 
+    # Construct XPath to select TimeSeries nodes, filtering by mRID and/or position if provided.
+    timeseries_xpath = ".//ns:TimeSeries"
+    filters = []
+
+    # Helper to create a list from a string or list
+    def _to_list(value: str | list[str] | None) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return value
+
+    mrid_list = _to_list(mrid)
+    if mrid_list:
+        mrid_conditions = " or ".join([f"ns:mRID='{i}'" for i in mrid_list])
+        filters.append(f"({mrid_conditions})")
+
+    position_list = _to_list(position)
+    if position_list:
+        # The tag name is unusual, but this XPath should work with ElementTree
+        pos_conditions = " or ".join([f"ns:classificationSequence_AttributeInstanceComponent.position='{p}'" for p in position_list])
+        filters.append(f"({pos_conditions})")
+
+    if filters:
+        combined_filters = " and ".join(filters)
+        timeseries_xpath = f".//ns:TimeSeries[{combined_filters}]"
+
     rows = []
     # Day-ahead doc can include multiple TimeSeries
-    for ts_node in root.findall(".//ns:TimeSeries", ns):
+
+    for ts_node in root.findall(timeseries_xpath, ns):
         # Resolution per Period (could differ)
+        ts_mrid = ts_node.findtext("ns:mRID", namespaces=ns)
+        if not ts_mrid:
+            continue
         for period in ts_node.findall(".//ns:Period", ns):
             # Time interval is UTC in the response (per docs)
             start_txt = period.findtext("ns:timeInterval/ns:start", namespaces=ns)
@@ -209,11 +263,12 @@ def fetch_entsoe_day_ahead(
                         "ct_per_kwh": price * 0.1,
                         "source": "ENTSOE",
                         "resolution": f"PT{res_min}M",
+                        "mrid": ts_mrid,
                     }
                 )
 
     if not rows:
-        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution"])
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
 
     df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
     return df

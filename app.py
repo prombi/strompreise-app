@@ -90,7 +90,7 @@ def compute_price(ct_per_kwh: float, fees: dict, include_fees: bool) -> float:
 # Sidebar
 # ---------------------------------------------------------
 with st.sidebar:
-    st.header("Gebühren einstellen")
+    st.header("Gebühren")
     if "plz" not in st.session_state:
         st.session_state.plz = DEFAULT_PLZ
     if "fees" not in st.session_state:
@@ -101,7 +101,7 @@ with st.sidebar:
     if col_apply_fees.button("Gebühren aus PLZ", use_container_width=True):
         st.session_state.fees = estimate_fees_from_plz(st.session_state.plz)
         _sync_fee_widget_state()
-    if col_reset_fees.button("Gebühren zurücksetzen", use_container_width=True):
+    if col_reset_fees.button("Zurück-setzen", use_container_width=True):
         st.session_state.fees = estimate_fees_from_plz(DEFAULT_PLZ)
         _sync_fee_widget_state()
     st.session_state.fees["umlagen_ct"] = st.number_input(
@@ -184,6 +184,7 @@ with st.sidebar:
 # ---------------------------------------------------------
 class PriceDataError(Exception):
     """Raised when a selected data source cannot provide usable data."""
+
 def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> pd.DataFrame:
     """
     Normalise raw API data into the df_all structure:
@@ -216,6 +217,7 @@ def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> 
         .reset_index(drop=True)
     )
     return df_prepared
+
 def normalize_resolution_hint(hint: Optional[str], default: str = "quarterhour") -> str:
     if not hint:
         return default
@@ -225,6 +227,7 @@ def normalize_resolution_hint(hint: Optional[str], default: str = "quarterhour")
     if "60" in hint_lower or "hour" in hint_lower:
         return "hour"
     return default
+
 def detect_resolution_label(df: pd.DataFrame, fallback: str = "quarterhour") -> str:
     if df.empty:
         return fallback
@@ -242,6 +245,7 @@ def detect_resolution_label(df: pd.DataFrame, fallback: str = "quarterhour") -> 
         if median_minutes >= 45:
             return "hour"
     return fallback
+
 @st.cache_data(ttl=900)
 def load_price_data(
     source: str,
@@ -264,10 +268,12 @@ def load_price_data(
             token=entsoe_token,
             start_utc=start_utc,
             end_utc=end_utc,
+            position='1'
         )
         meta = {"region": "DE-LU", "raw_resolution": None, "source_id": "ENTSOE"}
         return df, meta
     raise PriceDataError(f"Unbekannte Datenquelle: {source}")
+
 # ------------------------------------------------------
 # Call API and get data df_raw
 # ------------------------------------------------------
@@ -302,7 +308,7 @@ yesterday = today - dt.timedelta(days=1)
 tomorrow = today + dt.timedelta(days=1)
 # Convert timestamps to timezone-aware datetimes
 # Convert €/MWh → ct/kWh (1 €/MWh = 0.1 ct/kWh)
-# 1) Build full dataset with valid prices (no pre-filtering to 12→12)
+# 1) Build full dataset with valid prices 
 df_all = prepare_price_dataframe(df_raw)
 if df_all.empty:
     st.info("Keine gültigen Preisdaten verfügbar.")
@@ -349,9 +355,11 @@ spot_series = df_chart["spot_ct"].astype(float)
 total_series = df_chart["total_ct"].astype(float)
 fees_series = df_chart["fees_incl_vat_ct"].astype(float)
 time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
+# time_series = [ts.isoformat() for ts in df_chart["ts"].dt.tz_convert(tz_berlin)]
 # fees_hover = fees_series.to_numpy()
 fees_hover = fees_series.round(6).tolist()
 initial_view = (default_start, default_end)
+
 def _normalize_ts(value) -> pd.Timestamp:
     ts = pd.to_datetime(value)
     if ts.tzinfo is None:
@@ -359,6 +367,7 @@ def _normalize_ts(value) -> pd.Timestamp:
     else:
         ts = ts.tz_convert(tz_berlin)
     return ts
+
 local_min = _normalize_ts(min_ts).floor('h')
 local_max = _normalize_ts(max_ts).ceil('h')
 default_start_local = _normalize_ts(initial_view[0]).floor('h')
@@ -442,7 +451,7 @@ fig.add_trace(go.Scatter(
     y=spot_series.tolist(),
     name="Börsenstrompreis",
     mode="lines",
-    line_shape="hv",
+    line_shape="vh",
     line=dict(width=0.8, color="#1f77b4"),
     fill="tozeroy",
     fillcolor="rgba(31, 119, 180, 0.25)",
@@ -454,7 +463,7 @@ fig.add_trace(go.Scatter(
     y=total_series.tolist(),
     name="Gesamtpreis",
     mode="lines",
-    line_shape="hv",
+    line_shape="vh",
     line=dict(width=1.2, color="#d62728"),
     fill="tonexty",
     fillcolor="rgba(255, 127, 14, 0.35)",
