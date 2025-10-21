@@ -155,15 +155,6 @@ def fetch_entsoe_day_ahead(
     if start_utc.tzinfo is None or end_utc.tzinfo is None:
         raise ValueError("start_utc and end_utc must be timezone-aware")
 
-    params = {
-        "securityToken": token,
-        "documentType": "A44",
-        "in_Domain": eic_bzn,
-        "out_Domain": eic_bzn,
-        "periodStart": _fmt_utc(start_utc),
-        "periodEnd": _fmt_utc(end_utc),
-    }
-
     # --- Retry logic for network resilience ---
     retry_strategy = Retry(
         total=3,  # Total number of retries
@@ -175,22 +166,73 @@ def fetch_entsoe_day_ahead(
     session = requests.Session()
     session.mount("https://", adapter)
 
-    try:
-        resp = session.get(ENTSOE_BASE, params=params, timeout=60) # Increased timeout to 60s
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"ENTSO-E: Network request failed after retries: {e}")
-    if resp.status_code == 401:
-        raise PermissionError("ENTSO-E: Unauthorized (check token)")
-    resp.raise_for_status()
+    # --- Chunking logic to handle large date ranges ---
+    # The ENTSO-E API often times out on requests for long periods.
+    # We split the total period into smaller chunks (e.g., 7 days) and fetch them sequentially.
+    all_dfs = []
+    current_start = start_utc
+    chunk_size_days = 7
 
-    # "No matching data" comes back as an Acknowledgement document (HTTP 200)
-    if b"Acknowledgement_MarketDocument" in resp.content and b"No matching data" in resp.content:
+    while current_start < end_utc:
+        chunk_end = min(current_start + dt.timedelta(days=chunk_size_days), end_utc)
+
+        params = {
+            "securityToken": token,
+            "documentType": "A44",
+            "in_Domain": eic_bzn,
+            "out_Domain": eic_bzn,
+            "periodStart": _fmt_utc(current_start),
+            "periodEnd": _fmt_utc(chunk_end),
+        }
+
+        try:
+            resp = session.get(ENTSOE_BASE, params=params, timeout=60)
+        except requests.exceptions.RequestException as e:
+            # If even a single chunk fails after retries, we raise an error.
+            raise RuntimeError(f"ENTSO-E: Network request for chunk {current_start.date()} failed: {e}")
+
+        if resp.status_code == 401:
+            raise PermissionError("ENTSO-E: Unauthorized (check token)")
+        resp.raise_for_status()
+
+        # "No matching data" comes back as an Acknowledgement document (HTTP 200)
+        if b"Acknowledgement_MarketDocument" in resp.content and b"No matching data" in resp.content:
+            # This chunk is empty, continue to the next one
+            current_start = chunk_end
+            continue
+
+        # If we get here, we have valid XML data for the chunk
+        all_dfs.append(resp.content)
+        current_start = chunk_end
+
+    if not all_dfs:
+        # If all chunks were empty, return an empty DataFrame
         return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
 
-    # Parse XML
+    # --- End of chunking logic ---
+
+    # Now, parse all the collected XML documents
+    all_rows = []
+    for xml_content in all_dfs:
+        chunk_rows = _parse_entsoe_xml(xml_content, mrid, position)
+        all_rows.extend(chunk_rows)
+
+    if not all_rows:
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
+
+    df = pd.DataFrame(all_rows).sort_values("ts").drop_duplicates().reset_index(drop=True)
+    return df
+
+
+def _parse_entsoe_xml(
+    xml_content: bytes,
+    mrid: Optional[str | list[str]] = None,
+    position: Optional[str | list[str]] = None,
+) -> list[dict]:
+    """Helper function to parse a single ENTSO-E XML response."""
     ns = {"ns": "urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3"}
     try:
-        root = ET.fromstring(resp.content)
+        root = ET.fromstring(xml_content)
     except ET.ParseError as ex:
         raise RuntimeError(f"ENTSO-E: XML parse error: {ex}")
 
@@ -220,7 +262,7 @@ def fetch_entsoe_day_ahead(
     if filters:
         combined_filters = " and ".join(filters)
         timeseries_xpath = f".//ns:TimeSeries[{combined_filters}]"
-
+    
     rows = []
     # Day-ahead doc can include multiple TimeSeries
 
@@ -266,12 +308,7 @@ def fetch_entsoe_day_ahead(
                         "mrid": ts_mrid,
                     }
                 )
-
-    if not rows:
-        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
-
-    df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
-    return df
+    return rows
 
 
 # ---------------------------------------------------------
