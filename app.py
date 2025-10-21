@@ -451,7 +451,7 @@ fig.add_trace(go.Scatter(
     y=spot_series.tolist(),
     name="Börsenstrompreis",
     mode="lines",
-    line_shape="vh",
+    line_shape="hv", # First horizontal, then vertical
     line=dict(width=0.8, color="#1f77b4"),
     fill="tozeroy",
     fillcolor="rgba(31, 119, 180, 0.25)",
@@ -463,7 +463,7 @@ fig.add_trace(go.Scatter(
     y=total_series.tolist(),
     name="Gesamtpreis",
     mode="lines",
-    line_shape="vh",
+    line_shape="hv", # First horizontal, then vertical
     line=dict(width=1.2, color="#d62728"),
     fill="tonexty",
     fillcolor="rgba(255, 127, 14, 0.35)",
