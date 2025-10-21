@@ -141,7 +141,8 @@ with st.sidebar:
 # ---------------------------------------------------------
 SOURCE_OPTIONS = {
     "SMARD (Bundesnetzagentur)": "SMARD",
-    "ENTSO-E Transparency": "ENTSOE",
+    "ENTSO-E - 1 (12:00 Auction)": "ENTSOE-1",
+    "ENTSO-E - 2 (10:15 EXAA Auction)": "ENTSOE-2"
 }
 col_source, col_view, col_res = st.columns(3)
 with col_source:
@@ -161,11 +162,11 @@ with col_res:
 if "entsoe_token" not in st.session_state:
     st.session_state.entsoe_token = st.secrets.get("entsoe_token", "")
 if "entsoe_days_back" not in st.session_state:
-    st.session_state.entsoe_days_back = 14
+    st.session_state.entsoe_days_back = 5
 if "entsoe_days_forward" not in st.session_state:
     st.session_state.entsoe_days_forward = 2
 with st.sidebar:
-    if data_source_choice == "ENTSOE":
+    if (data_source_choice == "ENTSOE-1") or (data_source_choice == "ENTSOE-2"):
         st.subheader("ENTSO-E Einstellungen")
         st.session_state.entsoe_days_back = st.slider(
             "Tage zurück",
@@ -258,19 +259,24 @@ def load_price_data(
         df = price_sources.fetch_smard_day_ahead(resolution=resolution)
         meta = {"region": "DE-LU", "raw_resolution": resolution, "source_id": "SMARD"}
         return df, meta
-    if source == "ENTSOE":
+    if (source == "ENTSOE-1") or (source == "ENTSOE-2"):
         if not entsoe_token:
             raise PriceDataError("Für ENTSO-E wird ein API Token benötigt.")
         now_utc = dt.datetime.now(dt.timezone.utc)
         start_utc = (now_utc - dt.timedelta(days=entsoe_days_back)).replace(minute=0, second=0, microsecond=0)
         end_utc = (now_utc + dt.timedelta(days=entsoe_days_forward)).replace(minute=0, second=0, microsecond=0)
+        if source == "ENTSOE-2":
+            position = '2'
+        else:
+            position = '1'
+
         df = price_sources.fetch_entsoe_day_ahead(
             token=entsoe_token,
             start_utc=start_utc,
             end_utc=end_utc,
-            position='1'
+            position=position
         )
-        meta = {"region": "DE-LU", "raw_resolution": None, "source_id": "ENTSOE"}
+        meta = {"region": "DE-LU", "raw_resolution": None, "source_id": source}
         return df, meta
     raise PriceDataError(f"Unbekannte Datenquelle: {source}")
 
