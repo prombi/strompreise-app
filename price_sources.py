@@ -38,7 +38,7 @@ def fetch_smard_day_ahead(
     Fetch Day-Ahead market prices from SMARD for DE/LU.
     Version 0.0.2
     Returns DataFrame: ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="SMARD", resolution.
-    Strategy:
+    StBrategy:
       - try regions in order: DE-LU, DE
       - get index_{resolution}.json from chart_data
       - walk timestamps backwards, try table_data file first, then chart_data file
@@ -144,7 +144,7 @@ def fetch_entsoe_day_ahead(
 ) -> pd.DataFrame:
     """
     Fetch Day-Ahead prices via ENTSO-E REST (XML), returning:
-      ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="ENTSOE",
+      ts (Europe/Berlin), eur_per_mwh, ct_per_kwh, source="ENTSOE", position,
       resolution ("PT15M"/"PT60M"), and mrid.
     start_utc / end_utc must be tz-aware in any tz (converted to UTC for the query).
     eic_bzn: Bidding zone EIC code (e.g., DE-LU).
@@ -185,7 +185,7 @@ def fetch_entsoe_day_ahead(
 
     # "No matching data" comes back as an Acknowledgement document (HTTP 200)
     if b"Acknowledgement_MarketDocument" in resp.content and b"No matching data" in resp.content:
-        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid", "position"])
 
     # Parse XML
     ns = {"ns": "urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3"}
@@ -211,20 +211,22 @@ def fetch_entsoe_day_ahead(
         mrid_conditions = " or ".join([f"ns:mRID='{i}'" for i in mrid_list])
         filters.append(f"({mrid_conditions})")
 
-    position_list = _to_list(position)
-    if position_list:
-        # The tag name is unusual, but this XPath should work with ElementTree
-        pos_conditions = " or ".join([f"ns:classificationSequence_AttributeInstanceComponent.position='{p}'" for p in position_list])
-        filters.append(f"({pos_conditions})")
-
     if filters:
         combined_filters = " and ".join(filters)
         timeseries_xpath = f".//ns:TimeSeries[{combined_filters}]"
 
     rows = []
     # Day-ahead doc can include multiple TimeSeries
+    position_list = _to_list(position)
 
     for ts_node in root.findall(timeseries_xpath, ns):
+        # Manually filter by position, as ElementTree's XPath has issues with dots in tag names
+        ts_position = ts_node.findtext(
+            "ns:classificationSequence_AttributeInstanceComponent.position", namespaces=ns
+        )
+        if position_list and ts_position not in position_list:
+            continue
+
         # Resolution per Period (could differ)
         ts_mrid = ts_node.findtext("ns:mRID", namespaces=ns)
         if not ts_mrid:
@@ -264,11 +266,12 @@ def fetch_entsoe_day_ahead(
                         "source": "ENTSOE",
                         "resolution": f"PT{res_min}M",
                         "mrid": ts_mrid,
+                        "position": ts_position,
                     }
                 )
 
     if not rows:
-        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid"])
+        return pd.DataFrame(columns=["ts", "eur_per_mwh", "ct_per_kwh", "source", "resolution", "mrid", "position"])
 
     df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
     return df

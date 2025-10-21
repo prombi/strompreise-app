@@ -1,0 +1,4842 @@
+<?xml version="1.0" ?>
+<Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
+  
+    
+  <mRID>9af8768d90704dd9842c65bebecff52f</mRID>
+  
+    
+  <revisionNumber>1</revisionNumber>
+  
+    
+  <type>A44</type>
+  
+    
+  <sender_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450</sender_MarketParticipant.mRID>
+  
+    
+  <sender_MarketParticipant.marketRole.type>A32</sender_MarketParticipant.marketRole.type>
+  
+    
+  <receiver_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450</receiver_MarketParticipant.mRID>
+  
+    
+  <receiver_MarketParticipant.marketRole.type>A33</receiver_MarketParticipant.marketRole.type>
+  
+    
+  <createdDateTime>2025-10-20T14:32:13Z</createdDateTime>
+  
+    
+  <period.timeInterval>
+    
+      
+    <start>2025-10-18T22:00Z</start>
+    
+      
+    <end>2025-10-20T22:00Z</end>
+    
+    
+  </period.timeInterval>
+  
+      
+  <TimeSeries>
+    
+        
+    <mRID>1</mRID>
+    
+        
+    <auction.type>A01</auction.type>
+    
+        
+    <businessType>A62</businessType>
+    
+        
+    <in_Domain.mRID codingScheme="A01">10Y1001A1001A82H</in_Domain.mRID>
+    
+        
+    <out_Domain.mRID codingScheme="A01">10Y1001A1001A82H</out_Domain.mRID>
+    
+        
+    <contract_MarketAgreement.type>A01</contract_MarketAgreement.type>
+    
+        
+    <currency_Unit.name>EUR</currency_Unit.name>
+    
+        
+    <price_Measure_Unit.name>MWH</price_Measure_Unit.name>
+    
+          
+    <classificationSequence_AttributeInstanceComponent.position>2</classificationSequence_AttributeInstanceComponent.position>
+    
+        
+    <curveType>A03</curveType>
+    
+          
+    <Period>
+      
+            
+      <timeInterval>
+        
+              
+        <start>2025-10-18T22:00Z</start>
+        
+              
+        <end>2025-10-19T22:00Z</end>
+        
+            
+      </timeInterval>
+      
+            
+      <resolution>PT15M</resolution>
+      
+              
+      <Point>
+        
+                
+        <position>1</position>
+        
+                  
+        <price.amount>101.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>2</position>
+        
+                  
+        <price.amount>95.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>3</position>
+        
+                  
+        <price.amount>88.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>4</position>
+        
+                  
+        <price.amount>84.21</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>5</position>
+        
+                  
+        <price.amount>93.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>6</position>
+        
+                  
+        <price.amount>88.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>7</position>
+        
+                  
+        <price.amount>83.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>8</position>
+        
+                  
+        <price.amount>85.91</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>9</position>
+        
+                  
+        <price.amount>87.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>10</position>
+        
+                  
+        <price.amount>82.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>11</position>
+        
+                  
+        <price.amount>84.29</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>13</position>
+        
+                  
+        <price.amount>83</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>14</position>
+        
+                  
+        <price.amount>80</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>15</position>
+        
+                  
+        <price.amount>79.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>16</position>
+        
+                  
+        <price.amount>86.65</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>17</position>
+        
+                  
+        <price.amount>89.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>18</position>
+        
+                  
+        <price.amount>80.83</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>20</position>
+        
+                  
+        <price.amount>78.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>21</position>
+        
+                  
+        <price.amount>87.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>22</position>
+        
+                  
+        <price.amount>84.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>23</position>
+        
+                  
+        <price.amount>82.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>24</position>
+        
+                  
+        <price.amount>78.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>25</position>
+        
+                  
+        <price.amount>84.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>26</position>
+        
+                  
+        <price.amount>82.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>27</position>
+        
+                  
+        <price.amount>83.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>28</position>
+        
+                  
+        <price.amount>84.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>29</position>
+        
+                  
+        <price.amount>74.17</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>30</position>
+        
+                  
+        <price.amount>77.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>31</position>
+        
+                  
+        <price.amount>88.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>32</position>
+        
+                  
+        <price.amount>99.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>33</position>
+        
+                  
+        <price.amount>100</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>34</position>
+        
+                  
+        <price.amount>87.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>35</position>
+        
+                  
+        <price.amount>80</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>36</position>
+        
+                  
+        <price.amount>66.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>37</position>
+        
+                  
+        <price.amount>89.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>38</position>
+        
+                  
+        <price.amount>80.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>39</position>
+        
+                  
+        <price.amount>76.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>40</position>
+        
+                  
+        <price.amount>70.97</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>41</position>
+        
+                  
+        <price.amount>87</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>42</position>
+        
+                  
+        <price.amount>75.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>43</position>
+        
+                  
+        <price.amount>67.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>44</position>
+        
+                  
+        <price.amount>74.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>45</position>
+        
+                  
+        <price.amount>77.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>46</position>
+        
+                  
+        <price.amount>67.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>47</position>
+        
+                  
+        <price.amount>59.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>48</position>
+        
+                  
+        <price.amount>59.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>49</position>
+        
+                  
+        <price.amount>58.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>50</position>
+        
+                  
+        <price.amount>49.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>51</position>
+        
+                  
+        <price.amount>48.03</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>52</position>
+        
+                  
+        <price.amount>43.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>53</position>
+        
+                  
+        <price.amount>-3.69</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>54</position>
+        
+                  
+        <price.amount>45.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>55</position>
+        
+                  
+        <price.amount>38.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>56</position>
+        
+                  
+        <price.amount>32.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>57</position>
+        
+                  
+        <price.amount>40.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>58</position>
+        
+                  
+        <price.amount>43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>59</position>
+        
+                  
+        <price.amount>47.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>60</position>
+        
+                  
+        <price.amount>33.11</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>61</position>
+        
+                  
+        <price.amount>37.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>62</position>
+        
+                  
+        <price.amount>47.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>63</position>
+        
+                  
+        <price.amount>58.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>64</position>
+        
+                  
+        <price.amount>66.16</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>65</position>
+        
+                  
+        <price.amount>56.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>66</position>
+        
+                  
+        <price.amount>70.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>67</position>
+        
+                  
+        <price.amount>76.53</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>68</position>
+        
+                  
+        <price.amount>90.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>69</position>
+        
+                  
+        <price.amount>71.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>70</position>
+        
+                  
+        <price.amount>78.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>71</position>
+        
+                  
+        <price.amount>95.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>72</position>
+        
+                  
+        <price.amount>112.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>73</position>
+        
+                  
+        <price.amount>96.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>74</position>
+        
+                  
+        <price.amount>99.87</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>75</position>
+        
+                  
+        <price.amount>103.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>76</position>
+        
+                  
+        <price.amount>100.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>77</position>
+        
+                  
+        <price.amount>104.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>78</position>
+        
+                  
+        <price.amount>93.26</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>79</position>
+        
+                  
+        <price.amount>94.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>80</position>
+        
+                  
+        <price.amount>77.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>81</position>
+        
+                  
+        <price.amount>52.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>83</position>
+        
+                  
+        <price.amount>59.53</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>84</position>
+        
+                  
+        <price.amount>66.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>85</position>
+        
+                  
+        <price.amount>45.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>86</position>
+        
+                  
+        <price.amount>70.26</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>87</position>
+        
+                  
+        <price.amount>66.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>88</position>
+        
+                  
+        <price.amount>58.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>89</position>
+        
+                  
+        <price.amount>45.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>90</position>
+        
+                  
+        <price.amount>57.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>91</position>
+        
+                  
+        <price.amount>61</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>92</position>
+        
+                  
+        <price.amount>54.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>93</position>
+        
+                  
+        <price.amount>40.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>94</position>
+        
+                  
+        <price.amount>37.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>95</position>
+        
+                  
+        <price.amount>47.69</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>96</position>
+        
+                  
+        <price.amount>41.9</price.amount>
+        
+              
+      </Point>
+      
+          
+    </Period>
+    
+      
+  </TimeSeries>
+  
+      
+  <TimeSeries>
+    
+        
+    <mRID>2</mRID>
+    
+        
+    <auction.type>A01</auction.type>
+    
+        
+    <businessType>A62</businessType>
+    
+        
+    <in_Domain.mRID codingScheme="A01">10Y1001A1001A82H</in_Domain.mRID>
+    
+        
+    <out_Domain.mRID codingScheme="A01">10Y1001A1001A82H</out_Domain.mRID>
+    
+        
+    <contract_MarketAgreement.type>A01</contract_MarketAgreement.type>
+    
+        
+    <currency_Unit.name>EUR</currency_Unit.name>
+    
+        
+    <price_Measure_Unit.name>MWH</price_Measure_Unit.name>
+    
+          
+    <classificationSequence_AttributeInstanceComponent.position>1</classificationSequence_AttributeInstanceComponent.position>
+    
+        
+    <curveType>A03</curveType>
+    
+          
+    <Period>
+      
+            
+      <timeInterval>
+        
+              
+        <start>2025-10-18T22:00Z</start>
+        
+              
+        <end>2025-10-19T22:00Z</end>
+        
+            
+      </timeInterval>
+      
+            
+      <resolution>PT15M</resolution>
+      
+              
+      <Point>
+        
+                
+        <position>1</position>
+        
+                  
+        <price.amount>103.22</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>2</position>
+        
+                  
+        <price.amount>92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>3</position>
+        
+                  
+        <price.amount>87.58</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>4</position>
+        
+                  
+        <price.amount>86.57</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>5</position>
+        
+                  
+        <price.amount>95.65</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>6</position>
+        
+                  
+        <price.amount>89.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>7</position>
+        
+                  
+        <price.amount>84.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>8</position>
+        
+                  
+        <price.amount>80.34</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>9</position>
+        
+                  
+        <price.amount>86.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>10</position>
+        
+                  
+        <price.amount>81.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>11</position>
+        
+                  
+        <price.amount>81.72</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>12</position>
+        
+                  
+        <price.amount>79.52</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>13</position>
+        
+                  
+        <price.amount>83.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>14</position>
+        
+                  
+        <price.amount>80.58</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>15</position>
+        
+                  
+        <price.amount>81.52</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>16</position>
+        
+                  
+        <price.amount>83.39</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>17</position>
+        
+                  
+        <price.amount>83.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>18</position>
+        
+                  
+        <price.amount>82.35</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>19</position>
+        
+                  
+        <price.amount>84.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>20</position>
+        
+                  
+        <price.amount>82.82</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>21</position>
+        
+                  
+        <price.amount>82.37</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>22</position>
+        
+                  
+        <price.amount>81.29</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>23</position>
+        
+                  
+        <price.amount>85.62</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>24</position>
+        
+                  
+        <price.amount>84.71</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>25</position>
+        
+                  
+        <price.amount>82.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>26</position>
+        
+                  
+        <price.amount>82.34</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>27</position>
+        
+                  
+        <price.amount>85.14</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>28</position>
+        
+                  
+        <price.amount>91.02</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>29</position>
+        
+                  
+        <price.amount>85.55</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>30</position>
+        
+                  
+        <price.amount>87.77</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>31</position>
+        
+                  
+        <price.amount>83.49</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>32</position>
+        
+                  
+        <price.amount>84.21</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>33</position>
+        
+                  
+        <price.amount>98.73</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>34</position>
+        
+                  
+        <price.amount>95.56</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>35</position>
+        
+                  
+        <price.amount>81.87</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>36</position>
+        
+                  
+        <price.amount>72.47</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>37</position>
+        
+                  
+        <price.amount>96.86</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>38</position>
+        
+                  
+        <price.amount>82.82</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>39</position>
+        
+                  
+        <price.amount>74.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>40</position>
+        
+                  
+        <price.amount>59.62</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>41</position>
+        
+                  
+        <price.amount>81.51</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>42</position>
+        
+                  
+        <price.amount>69.96</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>43</position>
+        
+                  
+        <price.amount>67.72</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>44</position>
+        
+                  
+        <price.amount>59.36</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>45</position>
+        
+                  
+        <price.amount>74.05</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>46</position>
+        
+                  
+        <price.amount>66.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>47</position>
+        
+                  
+        <price.amount>60.03</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>48</position>
+        
+                  
+        <price.amount>40.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>49</position>
+        
+                  
+        <price.amount>54.36</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>50</position>
+        
+                  
+        <price.amount>40.05</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>51</position>
+        
+                  
+        <price.amount>28</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>52</position>
+        
+                  
+        <price.amount>15.86</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>53</position>
+        
+                  
+        <price.amount>24.08</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>54</position>
+        
+                  
+        <price.amount>21.25</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>55</position>
+        
+                  
+        <price.amount>19.78</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>56</position>
+        
+                  
+        <price.amount>16.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>57</position>
+        
+                  
+        <price.amount>11.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>58</position>
+        
+                  
+        <price.amount>22.67</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>59</position>
+        
+                  
+        <price.amount>44.71</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>60</position>
+        
+                  
+        <price.amount>65.81</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>61</position>
+        
+                  
+        <price.amount>40.06</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>62</position>
+        
+                  
+        <price.amount>68.89</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>63</position>
+        
+                  
+        <price.amount>73.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>64</position>
+        
+                  
+        <price.amount>85.04</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>65</position>
+        
+                  
+        <price.amount>59.06</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>66</position>
+        
+                  
+        <price.amount>79.39</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>67</position>
+        
+                  
+        <price.amount>100.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>68</position>
+        
+                  
+        <price.amount>120.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>69</position>
+        
+                  
+        <price.amount>86.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>70</position>
+        
+                  
+        <price.amount>100.01</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>71</position>
+        
+                  
+        <price.amount>113.61</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>72</position>
+        
+                  
+        <price.amount>124.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>73</position>
+        
+                  
+        <price.amount>121.05</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>74</position>
+        
+                  
+        <price.amount>118.14</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>75</position>
+        
+                  
+        <price.amount>99.57</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>76</position>
+        
+                  
+        <price.amount>91.99</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>77</position>
+        
+                  
+        <price.amount>102.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>78</position>
+        
+                  
+        <price.amount>87.49</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>79</position>
+        
+                  
+        <price.amount>83</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>80</position>
+        
+                  
+        <price.amount>69.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>81</position>
+        
+                  
+        <price.amount>87.08</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>82</position>
+        
+                  
+        <price.amount>72.06</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>83</position>
+        
+                  
+        <price.amount>73.99</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>84</position>
+        
+                  
+        <price.amount>68.88</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>85</position>
+        
+                  
+        <price.amount>86.81</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>86</position>
+        
+                  
+        <price.amount>71.66</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>87</position>
+        
+                  
+        <price.amount>69.48</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>88</position>
+        
+                  
+        <price.amount>64.65</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>89</position>
+        
+                  
+        <price.amount>95</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>90</position>
+        
+                  
+        <price.amount>77.96</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>91</position>
+        
+                  
+        <price.amount>68.75</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>92</position>
+        
+                  
+        <price.amount>57.26</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>93</position>
+        
+                  
+        <price.amount>71.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>94</position>
+        
+                  
+        <price.amount>58.78</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>95</position>
+        
+                  
+        <price.amount>59.53</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>96</position>
+        
+                  
+        <price.amount>53.68</price.amount>
+        
+              
+      </Point>
+      
+          
+    </Period>
+    
+      
+  </TimeSeries>
+  
+      
+  <TimeSeries>
+    
+        
+    <mRID>3</mRID>
+    
+        
+    <auction.type>A01</auction.type>
+    
+        
+    <businessType>A62</businessType>
+    
+        
+    <in_Domain.mRID codingScheme="A01">10Y1001A1001A82H</in_Domain.mRID>
+    
+        
+    <out_Domain.mRID codingScheme="A01">10Y1001A1001A82H</out_Domain.mRID>
+    
+        
+    <contract_MarketAgreement.type>A01</contract_MarketAgreement.type>
+    
+        
+    <currency_Unit.name>EUR</currency_Unit.name>
+    
+        
+    <price_Measure_Unit.name>MWH</price_Measure_Unit.name>
+    
+          
+    <classificationSequence_AttributeInstanceComponent.position>2</classificationSequence_AttributeInstanceComponent.position>
+    
+        
+    <curveType>A03</curveType>
+    
+          
+    <Period>
+      
+            
+      <timeInterval>
+        
+              
+        <start>2025-10-19T22:00Z</start>
+        
+              
+        <end>2025-10-20T22:00Z</end>
+        
+            
+      </timeInterval>
+      
+            
+      <resolution>PT15M</resolution>
+      
+              
+      <Point>
+        
+                
+        <position>1</position>
+        
+                  
+        <price.amount>55.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>2</position>
+        
+                  
+        <price.amount>47.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>3</position>
+        
+                  
+        <price.amount>37.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>4</position>
+        
+                  
+        <price.amount>31.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>5</position>
+        
+                  
+        <price.amount>47.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>6</position>
+        
+                  
+        <price.amount>39.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>7</position>
+        
+                  
+        <price.amount>34.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>8</position>
+        
+                  
+        <price.amount>30.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>9</position>
+        
+                  
+        <price.amount>42.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>10</position>
+        
+                  
+        <price.amount>37</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>11</position>
+        
+                  
+        <price.amount>34.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>12</position>
+        
+                  
+        <price.amount>31.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>13</position>
+        
+                  
+        <price.amount>36.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>14</position>
+        
+                  
+        <price.amount>33</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>15</position>
+        
+                  
+        <price.amount>32.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>16</position>
+        
+                  
+        <price.amount>31.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>17</position>
+        
+                  
+        <price.amount>35.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>18</position>
+        
+                  
+        <price.amount>36.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>19</position>
+        
+                  
+        <price.amount>38.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>20</position>
+        
+                  
+        <price.amount>40.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>21</position>
+        
+                  
+        <price.amount>47.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>22</position>
+        
+                  
+        <price.amount>42.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>23</position>
+        
+                  
+        <price.amount>51.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>24</position>
+        
+                  
+        <price.amount>60.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>25</position>
+        
+                  
+        <price.amount>50.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>26</position>
+        
+                  
+        <price.amount>71.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>27</position>
+        
+                  
+        <price.amount>90.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>28</position>
+        
+                  
+        <price.amount>104.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>29</position>
+        
+                  
+        <price.amount>76.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>30</position>
+        
+                  
+        <price.amount>98.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>31</position>
+        
+                  
+        <price.amount>112.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>32</position>
+        
+                  
+        <price.amount>125.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>33</position>
+        
+                  
+        <price.amount>122.33</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>34</position>
+        
+                  
+        <price.amount>82.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>35</position>
+        
+                  
+        <price.amount>77.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>36</position>
+        
+                  
+        <price.amount>85.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>37</position>
+        
+                  
+        <price.amount>111.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>38</position>
+        
+                  
+        <price.amount>101.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>39</position>
+        
+                  
+        <price.amount>92.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>40</position>
+        
+                  
+        <price.amount>83.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>41</position>
+        
+                  
+        <price.amount>101.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>42</position>
+        
+                  
+        <price.amount>90</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>43</position>
+        
+                  
+        <price.amount>82.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>44</position>
+        
+                  
+        <price.amount>89.01</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>45</position>
+        
+                  
+        <price.amount>104.75</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>46</position>
+        
+                  
+        <price.amount>82.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>47</position>
+        
+                  
+        <price.amount>104.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>48</position>
+        
+                  
+        <price.amount>104.93</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>49</position>
+        
+                  
+        <price.amount>78.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>50</position>
+        
+                  
+        <price.amount>104.91</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>51</position>
+        
+                  
+        <price.amount>102.41</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>52</position>
+        
+                  
+        <price.amount>102.03</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>53</position>
+        
+                  
+        <price.amount>102.42</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>54</position>
+        
+                  
+        <price.amount>102.41</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>55</position>
+        
+                  
+        <price.amount>72.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>56</position>
+        
+                  
+        <price.amount>102.76</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>57</position>
+        
+                  
+        <price.amount>99.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>58</position>
+        
+                  
+        <price.amount>92.08</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>59</position>
+        
+                  
+        <price.amount>99.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>60</position>
+        
+                  
+        <price.amount>92.08</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>61</position>
+        
+                  
+        <price.amount>97.44</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>62</position>
+        
+                  
+        <price.amount>97.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>63</position>
+        
+                  
+        <price.amount>95.86</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>64</position>
+        
+                  
+        <price.amount>109.91</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>65</position>
+        
+                  
+        <price.amount>94.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>66</position>
+        
+                  
+        <price.amount>93.18</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>67</position>
+        
+                  
+        <price.amount>92.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>68</position>
+        
+                  
+        <price.amount>101.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>69</position>
+        
+                  
+        <price.amount>96.54</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>70</position>
+        
+                  
+        <price.amount>93.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>71</position>
+        
+                  
+        <price.amount>106.9</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>72</position>
+        
+                  
+        <price.amount>124.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>73</position>
+        
+                  
+        <price.amount>122.7</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>74</position>
+        
+                  
+        <price.amount>95.06</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>75</position>
+        
+                  
+        <price.amount>87.59</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>76</position>
+        
+                  
+        <price.amount>140.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>77</position>
+        
+                  
+        <price.amount>111.97</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>78</position>
+        
+                  
+        <price.amount>95.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>79</position>
+        
+                  
+        <price.amount>92.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>80</position>
+        
+                  
+        <price.amount>111.97</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>81</position>
+        
+                  
+        <price.amount>120</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>82</position>
+        
+                  
+        <price.amount>105.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>83</position>
+        
+                  
+        <price.amount>92.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>84</position>
+        
+                  
+        <price.amount>79.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>85</position>
+        
+                  
+        <price.amount>94.8</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>86</position>
+        
+                  
+        <price.amount>81.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>87</position>
+        
+                  
+        <price.amount>67.1</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>88</position>
+        
+                  
+        <price.amount>54.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>89</position>
+        
+                  
+        <price.amount>70.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>90</position>
+        
+                  
+        <price.amount>61.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>91</position>
+        
+                  
+        <price.amount>52.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>92</position>
+        
+                  
+        <price.amount>41</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>93</position>
+        
+                  
+        <price.amount>52.79</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>94</position>
+        
+                  
+        <price.amount>42.5</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>95</position>
+        
+                  
+        <price.amount>33</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>96</position>
+        
+                  
+        <price.amount>20.5</price.amount>
+        
+              
+      </Point>
+      
+          
+    </Period>
+    
+      
+  </TimeSeries>
+  
+      
+  <TimeSeries>
+    
+        
+    <mRID>4</mRID>
+    
+        
+    <auction.type>A01</auction.type>
+    
+        
+    <businessType>A62</businessType>
+    
+        
+    <in_Domain.mRID codingScheme="A01">10Y1001A1001A82H</in_Domain.mRID>
+    
+        
+    <out_Domain.mRID codingScheme="A01">10Y1001A1001A82H</out_Domain.mRID>
+    
+        
+    <contract_MarketAgreement.type>A01</contract_MarketAgreement.type>
+    
+        
+    <currency_Unit.name>EUR</currency_Unit.name>
+    
+        
+    <price_Measure_Unit.name>MWH</price_Measure_Unit.name>
+    
+          
+    <classificationSequence_AttributeInstanceComponent.position>1</classificationSequence_AttributeInstanceComponent.position>
+    
+        
+    <curveType>A03</curveType>
+    
+          
+    <Period>
+      
+            
+      <timeInterval>
+        
+              
+        <start>2025-10-19T22:00Z</start>
+        
+              
+        <end>2025-10-20T22:00Z</end>
+        
+            
+      </timeInterval>
+      
+            
+      <resolution>PT15M</resolution>
+      
+              
+      <Point>
+        
+                
+        <position>1</position>
+        
+                  
+        <price.amount>82.95</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>2</position>
+        
+                  
+        <price.amount>69.03</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>3</position>
+        
+                  
+        <price.amount>70.04</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>4</position>
+        
+                  
+        <price.amount>58.13</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>5</position>
+        
+                  
+        <price.amount>70.3</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>6</position>
+        
+                  
+        <price.amount>66.48</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>7</position>
+        
+                  
+        <price.amount>60.52</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>8</position>
+        
+                  
+        <price.amount>58.6</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>9</position>
+        
+                  
+        <price.amount>66.31</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>10</position>
+        
+                  
+        <price.amount>60.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>11</position>
+        
+                  
+        <price.amount>59.89</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>12</position>
+        
+                  
+        <price.amount>57.65</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>13</position>
+        
+                  
+        <price.amount>61.87</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>14</position>
+        
+                  
+        <price.amount>59.37</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>15</position>
+        
+                  
+        <price.amount>58.65</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>16</position>
+        
+                  
+        <price.amount>60.12</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>17</position>
+        
+                  
+        <price.amount>55.86</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>18</position>
+        
+                  
+        <price.amount>58.61</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>19</position>
+        
+                  
+        <price.amount>59.02</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>20</position>
+        
+                  
+        <price.amount>68.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>21</position>
+        
+                  
+        <price.amount>57.19</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>22</position>
+        
+                  
+        <price.amount>75.29</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>23</position>
+        
+                  
+        <price.amount>80.53</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>24</position>
+        
+                  
+        <price.amount>86.23</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>25</position>
+        
+                  
+        <price.amount>55.14</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>26</position>
+        
+                  
+        <price.amount>86.43</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>27</position>
+        
+                  
+        <price.amount>88.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>28</position>
+        
+                  
+        <price.amount>74.76</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>29</position>
+        
+                  
+        <price.amount>79.96</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>30</position>
+        
+                  
+        <price.amount>85.34</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>31</position>
+        
+                  
+        <price.amount>94.69</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>32</position>
+        
+                  
+        <price.amount>107.48</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>33</position>
+        
+                  
+        <price.amount>150.53</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>34</position>
+        
+                  
+        <price.amount>138.82</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>35</position>
+        
+                  
+        <price.amount>115.82</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>36</position>
+        
+                  
+        <price.amount>95.22</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>37</position>
+        
+                  
+        <price.amount>117.97</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>38</position>
+        
+                  
+        <price.amount>101.76</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>39</position>
+        
+                  
+        <price.amount>78.04</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>40</position>
+        
+                  
+        <price.amount>70.97</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>41</position>
+        
+                  
+        <price.amount>86.4</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>42</position>
+        
+                  
+        <price.amount>77.35</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>43</position>
+        
+                  
+        <price.amount>66.47</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>44</position>
+        
+                  
+        <price.amount>62.38</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>45</position>
+        
+                  
+        <price.amount>77.19</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>46</position>
+        
+                  
+        <price.amount>70.31</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>47</position>
+        
+                  
+        <price.amount>69.92</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>48</position>
+        
+                  
+        <price.amount>62.32</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>49</position>
+        
+                  
+        <price.amount>62.63</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>50</position>
+        
+                  
+        <price.amount>60.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>51</position>
+        
+                  
+        <price.amount>57.95</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>52</position>
+        
+                  
+        <price.amount>60.48</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>53</position>
+        
+                  
+        <price.amount>60.18</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>54</position>
+        
+                  
+        <price.amount>61.91</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>55</position>
+        
+                  
+        <price.amount>68.66</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>56</position>
+        
+                  
+        <price.amount>70.34</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>57</position>
+        
+                  
+        <price.amount>65.71</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>58</position>
+        
+                  
+        <price.amount>72.04</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>59</position>
+        
+                  
+        <price.amount>75.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>60</position>
+        
+                  
+        <price.amount>90.91</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>61</position>
+        
+                  
+        <price.amount>74.77</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>62</position>
+        
+                  
+        <price.amount>85.39</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>63</position>
+        
+                  
+        <price.amount>106.98</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>64</position>
+        
+                  
+        <price.amount>121.42</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>65</position>
+        
+                  
+        <price.amount>86.63</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>66</position>
+        
+                  
+        <price.amount>105.01</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>67</position>
+        
+                  
+        <price.amount>130.11</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>68</position>
+        
+                  
+        <price.amount>156.29</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>69</position>
+        
+                  
+        <price.amount>108.95</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>70</position>
+        
+                  
+        <price.amount>130.19</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>71</position>
+        
+                  
+        <price.amount>138.29</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>72</position>
+        
+                  
+        <price.amount>147.06</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>73</position>
+        
+                  
+        <price.amount>130.04</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>74</position>
+        
+                  
+        <price.amount>130.48</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>75</position>
+        
+                  
+        <price.amount>128.39</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>76</position>
+        
+                  
+        <price.amount>111.45</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>77</position>
+        
+                  
+        <price.amount>127</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>78</position>
+        
+                  
+        <price.amount>105.96</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>79</position>
+        
+                  
+        <price.amount>94.84</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>80</position>
+        
+                  
+        <price.amount>84.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>81</position>
+        
+                  
+        <price.amount>105.09</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>82</position>
+        
+                  
+        <price.amount>80.51</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>83</position>
+        
+                  
+        <price.amount>72.23</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>84</position>
+        
+                  
+        <price.amount>71.33</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>85</position>
+        
+                  
+        <price.amount>86.28</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>86</position>
+        
+                  
+        <price.amount>95.07</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>87</position>
+        
+                  
+        <price.amount>69.32</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>88</position>
+        
+                  
+        <price.amount>54.34</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>89</position>
+        
+                  
+        <price.amount>86.37</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>90</position>
+        
+                  
+        <price.amount>72.68</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>91</position>
+        
+                  
+        <price.amount>62.62</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>92</position>
+        
+                  
+        <price.amount>51.84</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>93</position>
+        
+                  
+        <price.amount>53.35</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>94</position>
+        
+                  
+        <price.amount>56.81</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>95</position>
+        
+                  
+        <price.amount>54.2</price.amount>
+        
+              
+      </Point>
+      
+              
+      <Point>
+        
+                
+        <position>96</position>
+        
+                  
+        <price.amount>39.64</price.amount>
+        
+              
+      </Point>
+      
+          
+    </Period>
+    
+      
+  </TimeSeries>
+  
+  
+</Publication_MarketDocument>
+
