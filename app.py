@@ -145,12 +145,10 @@ SOURCE_OPTIONS = {
     "ENTSO-E - 1 (12:00 Auction)": "ENTSOE-1",
     "ENTSO-E - 2 (10:15 EXAA Auction)": "ENTSOE-2"
 }
-col_source, col_view, col_res = st.columns(3)
+col_source, col_res = st.columns(2)
 with col_source:
     selected_source_label = st.selectbox("Datenquelle", list(SOURCE_OPTIONS.keys()), index=1)
     data_source_choice = SOURCE_OPTIONS[selected_source_label]
-with col_view:
-    include_fees = st.toggle("Inkl. Gebühren", value=True)
 with col_res:
     resolution_disabled = data_source_choice != "SMARD"
     resolution_is_quarterhour = st.toggle(
@@ -359,11 +357,7 @@ end_window = midnight_tomorrow
 # Clamp defaults to available data (so the slider has valid defaults even if data ends earlier)
 default_start = max(min_ts, start_window)
 default_end   = min(max_ts, end_window)
-if default_start > default_end:
-    # Fallback: if DA window not in data at all, default to full available range
-    default_start, default_end = min_ts, max_ts
 # 3) Prepare data for chart and stats
-stats_container = st.container()
 fees = st.session_state.fees
 df_chart = df_all.copy()
 df_chart["spot_ct"] = df_chart["ct_per_kwh"]
@@ -571,7 +565,11 @@ view_start = max(min_ts, view_start)
 view_end = min(max_ts, view_end)
 if view_start >= view_end:
     view_end = min(max_ts, view_start + pd.Timedelta(hours=1))
-with stats_container:
+
+st.subheader("Statistik")
+include_fees = st.toggle("Inkl. Gebühren", value=True, key="include_fees_toggle")
+
+with st.container():
     if df_view.empty:
         st.warning("Im ausgewählten Zeitbereich liegen keine Preispunkte vor.")
     else:
