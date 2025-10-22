@@ -185,7 +185,11 @@ with st.sidebar:
 class PriceDataError(Exception):
     """Raised when a selected data source cannot provide usable data."""
 
-def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> pd.DataFrame:
+def prepare_price_dataframe(
+    df_raw: pd.DataFrame, 
+    fees: dict,
+    tz: str = "Europe/Berlin"
+) -> pd.DataFrame:
     """
     Normalise raw API data into the df_all structure:
     - ensure a timezone-aware 'ts' column (Berlin)
@@ -216,6 +220,20 @@ def prepare_price_dataframe(df_raw: pd.DataFrame, tz: str = "Europe/Berlin") -> 
         .sort_values("ts")
         .reset_index(drop=True)
     )
+    # --- Add fee and total price calculations ---
+    df_prepared["spot_ct"] = df_prepared["ct_per_kwh"]
+    fees_excl_vat_ct = (
+        fees["stromsteuer_ct"]
+        + fees["umlagen_ct"]
+        + fees["konzessionsabgabe_ct"]
+        + fees["netzentgelt_ct"]
+    )
+    df_prepared["fees_excl_vat_ct"] = fees_excl_vat_ct
+    vat_on_price_and_fees = (df_prepared["spot_ct"] + fees_excl_vat_ct) * (fees["mwst"] / 100.0)
+    df_prepared["vat_ct"] = vat_on_price_and_fees
+    df_prepared["fees_incl_vat_ct"] = fees_excl_vat_ct + vat_on_price_and_fees
+    df_prepared["total_ct"] = df_prepared["spot_ct"] + df_prepared["fees_incl_vat_ct"]
+
     return df_prepared
 
 def normalize_resolution_hint(hint: Optional[str], default: str = "quarterhour") -> str:
@@ -330,8 +348,9 @@ yesterday = today - dt.timedelta(days=1)
 tomorrow = today + dt.timedelta(days=1)
 # Convert timestamps to timezone-aware datetimes
 # Convert €/MWh → ct/kWh (1 €/MWh = 0.1 ct/kWh)
+
 # 1) Build full dataset with valid prices 
-df_all = prepare_price_dataframe(df_raw)
+df_all = prepare_price_dataframe(df_raw, fees=st.session_state.fees)
 if df_all.empty:
     st.info("Keine gültigen Preisdaten verfügbar.")
     st.stop()
@@ -358,18 +377,7 @@ end_window = midnight_tomorrow
 default_start = max(min_ts, start_window)
 default_end   = min(max_ts, end_window)
 # 3) Prepare data for chart and stats
-fees = st.session_state.fees
-df_chart = df_all.copy()
-df_chart["spot_ct"] = df_chart["ct_per_kwh"]
-
-fees_no_vat = (
-    fees["stromsteuer_ct"]
-    + fees["umlagen_ct"]
-    + fees["konzessionsabgabe_ct"]
-    + fees["netzentgelt_ct"]
-)
-df_chart["fees_incl_vat_ct"] = (fees_no_vat + df_chart["spot_ct"]) * (fees["mwst"] / 100.0) + fees_no_vat
-df_chart["total_ct"] = df_chart["spot_ct"] + df_chart["fees_incl_vat_ct"]
+df_chart = df_all
 spot_series = df_chart["spot_ct"].astype(float)
 total_series = df_chart["total_ct"].astype(float)
 fees_series = df_chart["fees_incl_vat_ct"].astype(float)
@@ -479,9 +487,14 @@ if data_source_choice.startswith("ENTSOE"):
     custom_data_spot = position_series
 
 fig.add_trace(go.Scatter(
-    x=time_series, y=spot_series, name="Börsenstrompreis", mode="lines",
-    line_shape="hv", line=dict(width=0.8, color="#1f77b4"),
-    fill="tozeroy", fillcolor="rgba(31, 119, 180, 0.25)",
+    x=time_series, 
+    y=spot_series, 
+    name="Börsenstrompreis", 
+    mode="lines",
+    line_shape="hv", 
+    line=dict(width=0.8, color="#1f77b4"),
+    fill="tozeroy", 
+    fillcolor="rgba(31, 119, 180, 0.25)",
     customdata=custom_data_spot,
     hovertemplate=spot_hovertemplate,
 ))
