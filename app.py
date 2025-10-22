@@ -157,7 +157,7 @@ with col_res:
         disabled=resolution_disabled,
         help="Schaltet zwischen Viertelstunden- und Stundenauflösung (nur SMARD).",
     )
-    resolution_choice = "quarterhour" if resolution_is_quarterhour else "hour"
+    resolution_choice = "PT15M" if resolution_is_quarterhour else "PT60M"
 if "entsoe_token" not in st.session_state:
     st.session_state.entsoe_token = st.secrets.get("entsoe_token", "")
 if "entsoe_days_back" not in st.session_state:

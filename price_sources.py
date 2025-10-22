@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import math
 from typing import Literal, Optional
+import logging
 
 import pandas as pd
 import pytz
@@ -31,7 +32,8 @@ def _smard_get_json(url: str, timeout: int = 30) -> dict:
     return r.json()
 
 def fetch_smard_day_ahead(
-    resolution: Literal["quarterhour", "hour"] = "quarterhour",
+    resolution: Literal["PT15M", "PT60M"] = "PT15M",
+    smard_regions: list[str] = SMARD_REGIONS,
     max_backsteps: int = 16,
 ) -> pd.DataFrame:
     """
@@ -46,8 +48,14 @@ def fetch_smard_day_ahead(
     """
     errors = []
 
+    # Map from standard format to SMARD's specific strings
+    smard_res_map = {
+        "PT15M": "quarterhour",
+        "PT60M": "hour",
+    }
+
     def _try_one_resolution(res: str) -> Optional[pd.DataFrame]:
-        for region in SMARD_REGIONS:
+        for region in smard_regions:
             # 1) index list
             idx_url = f"{SMARD_CHART}/{SMARD_FILTER_DA}/{region}/index_{res}.json"
             try:
@@ -88,7 +96,8 @@ def fetch_smard_day_ahead(
                         df = pd.DataFrame(rows).sort_values("ts").reset_index(drop=True)
                         df["ct_per_kwh"] = df["eur_per_mwh"] * 0.1
                         df["source"] = "SMARD"
-                        df["resolution"] = res
+                        # Use the standardized resolution format in the output
+                        df["resolution"] = [k for k, v in smard_res_map.items() if v == res][0]
                         return df
                     except Exception as ex:
                         errors.append(f"{type(ex).__name__} {region}/{res}/{ts_ms}: {ex}")
@@ -96,10 +105,23 @@ def fetch_smard_day_ahead(
         return None
 
     # Try preferred resolution, then fallback
-    for res in [resolution, "hour"] if resolution != "hour" else ["hour"]:
-        df = _try_one_resolution(res)
-        if df is not None:
-            return df
+    smard_resolution = smard_res_map.get(resolution, "quarterhour")
+    
+    # First, try the requested resolution
+    df = _try_one_resolution(smard_resolution)
+    if df is not None:
+        return df
+    else:
+        msg = f"SMARD: No data for preferred resolution '{smard_resolution}', trying fallback."
+        logging.warning(msg)
+        errors.append(msg)
+    
+    # If that fails completely, try the fallback resolution
+    fallback_res = "hour" if smard_resolution == "quarterhour" else "quarterhour"
+    df_fallback = _try_one_resolution(fallback_res)
+    if df_fallback is not None:
+        return df_fallback
+
 
     raise RuntimeError(
         "SMARD: Could not find a valid Day-Ahead file. "
@@ -264,9 +286,9 @@ def fetch_entsoe_day_ahead(
                         "eur_per_mwh": price,
                         "ct_per_kwh": price * 0.1,
                         "source": "ENTSOE",
-                        "resolution": f"PT{res_min}M",
-                        "mrid": ts_mrid,
                         "position": ts_position,
+                        "mrid": ts_mrid,
+                        "resolution": f"PT{res_min}M"
                     }
                 )
 
