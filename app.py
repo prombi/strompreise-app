@@ -6,6 +6,7 @@ import pytz
 import streamlit as st
 import plotly.graph_objects as go
 import price_sources
+from plot_functions import plot_segments_by_category
 
 DEFAULT_PLZ = "82340"
 FEE_WIDGET_KEYS = {
@@ -314,6 +315,8 @@ def load_price_data(
         return df, meta
     raise PriceDataError(f"Unbekannte Datenquelle: {source}")
 
+
+
 # ------------------------------------------------------
 # Call API and get data df_raw
 # ------------------------------------------------------
@@ -435,7 +438,6 @@ if view_series.empty:
 y_max = float(view_series.max())
 y_max = max(y_max, 1.0)
 padding = y_max * 0.05
-fig = go.Figure()
 
 # --- Generate vertical lines for days, midday, and now ---
 day_shapes = []
@@ -472,40 +474,61 @@ if view_start <= now_local <= view_end:
     ))
 # --- End of line generation ---
 
-# --- Plotting Logic ---
-
+# ----- Plotting Logic -----
+# --- Plot spot price --- 
 # Base hovertemplate for spot price
 spot_hovertemplate = "Börsenstrompreis: %{y:.1f} ct/kWh<extra></extra>"
-custom_data_spot = None
-
 # If the source is ENTSOE-related, add the position to the hover text
 if data_source_choice.startswith("ENTSOE"):
     spot_hovertemplate = (
         "Börsenstrompreis: %{y:.1f} ct/kWh<br>" +
         "ENTSO-E Position: %{customdata}<extra></extra>"
     )
-    custom_data_spot = position_series
 
-fig.add_trace(go.Scatter(
-    x=time_series, 
-    y=spot_series, 
-    name="Börsenstrompreis", 
-    mode="lines",
-    line_shape="hv", 
-    line=dict(width=0.8, color="#1f77b4"),
-    fill="tozeroy", 
-    fillcolor="rgba(31, 119, 180, 0.25)",
-    customdata=custom_data_spot,
-    hovertemplate=spot_hovertemplate,
-))
+# Parameters for plotting Börsenstrompreis
+default_params = dict(
+        name="Börsenstrompreis", 
+        mode="lines",
+        line_shape="hv", 
+        line=dict(width=0.8, color="#1f77b4"),
+        fill="tozeroy",
+        fillcolor="rgba(31, 119, 180, 0.5)",
+        customdata="position",
+        hovertemplate=spot_hovertemplate
+)
+# Adaptations depending on ENTSO-E Position
+params_by_position = {
+    "1": dict(),
+    "2": dict(
+        line=dict(width=0.8, color="#1f77b4", dash="dash"),
+        fillcolor="rgba(31, 119, 180, 0.25)",
+    )
+}
 
-fig.add_trace(go.Scatter(
-    x=time_series, y=total_series, name="Gesamtpreis", mode="lines",
+fig = plot_segments_by_category(df_chart, time_col="ts", value_col="ct_per_kwh", category_col="position", 
+                                 scatter_defaults=default_params, params_by_category=params_by_position)
+
+# Parameters for plotting Gesamtpreis
+default_params = dict(
+    name="Gesamtpreis", mode="lines",
     line_shape="hv", line=dict(width=1.2, color="#d62728"),
-    fill="tonexty", fillcolor="rgba(255, 127, 14, 0.35)",
-    customdata=fees_hover,
-    hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>",
-))
+    fill="tonexty", tonexty_anchor="ct_per_kwh", 
+    fillcolor="rgba(255, 127, 14, 0.5)",
+    customdata="fees_incl_vat_ct",
+    hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>"
+)
+
+params_by_position = {
+    "1": dict(),
+    "2": dict(
+        line=dict(dash="dash"),
+        fillcolor="rgba(255, 127, 14, 0.25)",
+    )
+}
+
+fig = plot_segments_by_category(df_all, time_col="ts", value_col="total_ct", category_col="position", 
+                                fig=fig,
+                                scatter_defaults=default_params, params_by_category=params_by_position)
 
 fig.update_layout(
     height=400,
