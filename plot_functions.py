@@ -16,51 +16,26 @@ def plot_segments_by_category(
     fig: Optional[go.Figure] = None
 ) -> go.Figure:
     """
-    Render a time series as contiguous segments per `category`, each segment as its own go.Scatter trace.
+    Render a time series as contiguous segments per `category`, each segment as its own go.Scatter.
 
-    Features
-    --------
-    - Per-category params deep-merge over `scatter_defaults` (recursive for dicts like line/marker).
-    - Robust `customdata` handling per segment:
-        * "col:<name>" or "<name>" -> single column
-        * [col1, col2, ...]        -> multiple columns
-        * pd.Series / np.ndarray   -> vector(s) aligned to the (sorted/filtered) df
-        * callable(seg_df)         -> custom builder returning (n,) or (n,k)
-    - `fill="tonexty"` support via `tonexty_anchor` per category:
-        * "zero"  -> baseline at 0
-        * "prev"  -> baseline at last y of previous segment with same category
-        * "<col>" -> baseline from a column in df
-        * callable(seg_df) -> baseline array
-      A hidden baseline trace is inserted immediately before the filled trace.
+    - Per-category params deep-merge over `scatter_defaults`.
+    - Robust customdata per segment (columns, vectors, callables).
+    - `fill="tonexty"` support using `tonexty_anchor`:
+        * "zero" | "prev" | "<colname>" | callable(seg_df)->array
+      The function inserts a hidden baseline trace immediately before the filled trace.
+    - NEW: `tonexty_anchor_line_shape` (per-category) lets you set the baseline's `line_shape`.
+      If omitted, it inherits the segment's `line_shape` (recommended).
 
-    Parameters
-    ----------
-    df : DataFrame with columns [time_col, value_col, category_col]
-    time_col, value_col, category_col : str
-    params_by_category : dict[str, dict]
-        Per-category overrides for go.Scatter kwargs. May include:
-          - customdata : see above
-          - tonexty_anchor : "zero" | "prev" | "<colname>" | callable(seg_df)->array
-    scatter_defaults : dict | None
-        Global defaults for go.Scatter (e.g., mode, line, hovertemplate, line_shape, etc.).
-    sort_by_time : bool
-    layout : dict | None
-        Passed to fig.update_layout(**layout).
-    fig : go.Figure | None
-        Existing figure to append to.
-
-    Returns
-    -------
-    go.Figure
+    Per-category special keys (consumed by this function, not passed to go.Scatter):
+      - customdata
+      - tonexty_anchor
+      - tonexty_anchor_line_shape
     """
 
-    # ---------------- helper functions (scoped) ----------------
-    CustomDataSpec = Union[
-        None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]
-    ]
+    # ---------------- helpers ----------------
+    CustomDataSpec = Union[None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]]
 
     def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-        """Recursively merge dicts; override wins. Non-dicts (lists/arrays/strings) are replaced."""
         out = dict(base or {})
         for k, v in (override or {}).items():
             if k in out and isinstance(out[k], dict) and isinstance(v, dict):
@@ -70,53 +45,36 @@ def plot_segments_by_category(
         return out
 
     def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, spec: CustomDataSpec):
-        """Return per-segment customdata ndarray or None."""
         if spec is None:
             return None
-
         if callable(spec):
             arr = spec(seg)
             return np.asarray(arr) if arr is not None else None
-
         if isinstance(spec, str):
             col = spec[4:] if spec.startswith("col:") else spec
             if col not in seg.columns:
                 raise KeyError(f"customdata column '{col}' not in DataFrame segment.")
-            return seg[[col]].to_numpy()  # (n,1)
-
+            return seg[[col]].to_numpy()
         if isinstance(spec, (list, tuple)) and all(isinstance(c, str) for c in spec):
             missing = [c for c in spec if c not in seg.columns]
             if missing:
                 raise KeyError(f"customdata columns missing: {missing}")
-            return seg[list(spec)].to_numpy()  # (n,k)
-
-        # Vector-like aligned to FULL (sorted/filtered) df
+            return seg[list(spec)].to_numpy()
         if isinstance(spec, pd.Series):
             vec = spec.to_numpy()
         elif isinstance(spec, np.ndarray):
             vec = spec
         else:
-            raise TypeError(
-                "Unsupported customdata spec. Use a column name, list of columns, "
-                "Series/ndarray aligned to the sorted df, or a callable(seg_df)->array."
-            )
-
+            raise TypeError("Unsupported customdata spec.")
         if vec.shape[0] != len(full_df):
             raise ValueError(f"customdata vector must have length {len(full_df)} (got {vec.shape[0]}).")
-
-        pos_idx = seg["_rowid"].to_numpy()  # 0..n-1 positional ids
+        pos_idx = seg["_rowid"].to_numpy()
         arr = vec[pos_idx]
         return arr.reshape(-1, 1) if arr.ndim == 1 else np.asarray(arr)
 
     TonextyAnchor = Union[str, Callable[[pd.DataFrame], Iterable[float]]]
 
-    def _resolve_tonexty_baseline(
-        seg: pd.DataFrame,
-        *,
-        anchor: TonextyAnchor,
-        last_cat_value: Optional[float]
-    ) -> Optional[np.ndarray]:
-        """Return (n,) baseline array for tonexty or None."""
+    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, anchor: TonextyAnchor, last_cat_value: Optional[float]) -> Optional[np.ndarray]:
         n = len(seg)
         if anchor is None:
             return None
@@ -126,11 +84,9 @@ def plot_segments_by_category(
             if anchor == "prev":
                 base = 0.0 if last_cat_value is None else float(last_cat_value)
                 return np.full(n, base, dtype=float)
-            # treat as column name
             if anchor not in seg.columns:
                 raise KeyError(f"tonexty_anchor column '{anchor}' not in segment.")
             return seg[anchor].to_numpy(dtype=float)
-        # callable: build from segment df
         arr = np.asarray(anchor(seg), dtype=float)
         if arr.shape[0] != n:
             raise ValueError("tonexty_anchor callable must return array of same length as segment.")
@@ -167,15 +123,20 @@ def plot_segments_by_category(
             continue
 
         merged = _deep_merge(scatter_defaults or {}, per_cat or {})
+
+        # Pull special (non-Plotly) keys
         customdata_spec = merged.pop("customdata", None)
         tonexty_anchor = merged.pop("tonexty_anchor", None)
+        # NEW: optional explicit baseline line_shape; else inherit from segment's merged line_shape
+        tonexty_anchor_line_shape = merged.pop("tonexty_anchor_line_shape", merged.get("line_shape", None))
 
+        # Defaults: name & legend
         merged.setdefault("name", cat)
         if "showlegend" not in merged:
             merged["showlegend"] = (merged["name"] not in legend_seen)
         legend_seen.add(merged["name"])
 
-        # If tonexty requested, insert baseline first
+        # If tonexty requested, insert a baseline with matching line_shape BEFORE the filled trace
         wants_tonexty = (merged.get("fill") == "tonexty") and (tonexty_anchor is not None)
         if wants_tonexty:
             baseline_y = _resolve_tonexty_baseline(
@@ -184,7 +145,7 @@ def plot_segments_by_category(
                 last_cat_value=last_value_by_cat.get(cat)
             )
             if baseline_y is not None:
-                fig.add_trace(go.Scatter(
+                baseline_kwargs = dict(
                     x=seg[time_col],
                     y=baseline_y,
                     mode="lines",
@@ -192,11 +153,14 @@ def plot_segments_by_category(
                     hoverinfo="skip",
                     showlegend=False,
                     name=f"__baseline__{merged['name']}",
-                    legendgroup=merged.get("legendgroup", None)
-                ))
+                    legendgroup=merged.get("legendgroup", None),
+                )
+                if tonexty_anchor_line_shape is not None:
+                    baseline_kwargs["line_shape"] = tonexty_anchor_line_shape
+                fig.add_trace(go.Scatter(**baseline_kwargs))
 
+        # Segment trace (can be step/hv/vh/etc.)
         seg_customdata = _resolve_segment_customdata(seg, _df, customdata_spec)
-
         fig.add_trace(go.Scatter(
             x=seg[time_col],
             y=seg[value_col],

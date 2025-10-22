@@ -500,7 +500,7 @@ default_params = dict(
 params_by_position = {
     "1": dict(),
     "2": dict(
-        line=dict(width=0.8, color="#1f77b4", dash="dash"),
+        line=dict(width=0.8),
         fillcolor="rgba(31, 119, 180, 0.25)",
     )
 }
@@ -512,7 +512,7 @@ fig = plot_segments_by_category(df_chart, time_col="ts", value_col="ct_per_kwh",
 default_params = dict(
     name="Gesamtpreis", mode="lines",
     line_shape="hv", line=dict(width=1.2, color="#d62728"),
-    fill="tonexty", tonexty_anchor="ct_per_kwh", 
+    fill="tonexty", tonexty_anchor="ct_per_kwh",  tonexty_anchor_line_shape="hv",
     fillcolor="rgba(255, 127, 14, 0.5)",
     customdata="fees_incl_vat_ct",
     hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>"
@@ -521,7 +521,7 @@ default_params = dict(
 params_by_position = {
     "1": dict(),
     "2": dict(
-        line=dict(dash="dash"),
+        line=dict(width=0.8),
         fillcolor="rgba(255, 127, 14, 0.25)",
     )
 }
