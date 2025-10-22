@@ -275,6 +275,7 @@ def load_price_data(
 ) -> tuple[pd.DataFrame, dict]:
     if source == "SMARD":
         df = price_sources.fetch_smard_day_ahead(resolution=resolution)
+        df['position'] = "1"
         meta = {"region": "DE-LU", "raw_resolution": resolution, "source_id": "SMARD"}
         return df, meta
     
@@ -341,17 +342,6 @@ resolution_fallback = normalize_resolution_hint(
 # ---------------------------------------------------------
 # Data preparation
 # ---------------------------------------------------------
-# ---------------------------------------------------------
-# Keep ALL valid datapoints, then offer a slider to choose the visible window
-# ---------------------------------------------------------
-tz_berlin = pytz.timezone("Europe/Berlin")
-now = dt.datetime.now(tz=tz_berlin)
-today = now.date()
-yesterday = today - dt.timedelta(days=1)
-tomorrow = today + dt.timedelta(days=1)
-# Convert timestamps to timezone-aware datetimes
-# Convert €/MWh → ct/kWh (1 €/MWh = 0.1 ct/kWh)
-
 # 1) Build full dataset with valid prices 
 df_all = prepare_price_dataframe(df_raw, fees=st.session_state.fees)
 if df_all.empty:
@@ -360,7 +350,16 @@ if df_all.empty:
 used_resolution = detect_resolution_label(df_all, fallback=resolution_fallback)
 min_ts = df_all["ts"].min()
 max_ts = df_all["ts"].max()
-# 2) Define your *default* Day-Ahead window
+
+# ---------------------------------------------------------
+# Keep ALL valid datapoints, then offer a slider to choose the visible window
+# ---------------------------------------------------------
+tz_berlin = pytz.timezone("Europe/Berlin")
+now = dt.datetime.now(tz=tz_berlin)
+today = now.date()
+yesterday = today - dt.timedelta(days=1)
+tomorrow = today + dt.timedelta(days=1)
+
 noon_today = tz_berlin.localize(dt.datetime.combine(today, dt.time(12, 0)))
 noon_yesterday = tz_berlin.localize(dt.datetime.combine(yesterday, dt.time(12, 0)))
 noon_tomorrow  = tz_berlin.localize(dt.datetime.combine(tomorrow,  dt.time(12, 0)))
@@ -379,15 +378,16 @@ end_window = midnight_tomorrow
 # Clamp defaults to available data (so the slider has valid defaults even if data ends earlier)
 default_start = max(min_ts, start_window)
 default_end   = min(max_ts, end_window)
+
 # 3) Prepare data for chart and stats
 df_chart = df_all
-spot_series = df_chart["spot_ct"].astype(float)
-total_series = df_chart["total_ct"].astype(float)
-fees_series = df_chart["fees_incl_vat_ct"].astype(float)
-time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
-position_series = df_chart["position"].astype(str).tolist() if "position" in df_chart else ["1"] * len(df_chart)
+# spot_series = df_chart["spot_ct"].astype(float)
+# total_series = df_chart["total_ct"].astype(float)
+# fees_series = df_chart["fees_incl_vat_ct"].astype(float)
+# time_series = df_chart["ts"].dt.tz_convert(tz_berlin).dt.tz_localize(None)
+df_chart["position"] = df_chart["position"].astype(str) if "position" in df_chart else ["1"] * len(df_chart)
 # fees_hover = fees_series.to_numpy()
-fees_hover = fees_series.round(6).tolist()
+# fees_hover = fees_series.round(6).tolist()
 initial_view = (default_start, default_end)
 
 def _normalize_ts(value) -> pd.Timestamp:
