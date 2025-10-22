@@ -44,7 +44,8 @@ def plot_segments_by_category(
                 out[k] = v
         return out
 
-    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, spec: CustomDataSpec):
+    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, 
+                                    spec: Union[None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]]):
         if spec is None:
             return None
         if callable(spec):
@@ -74,7 +75,9 @@ def plot_segments_by_category(
 
     TonextyAnchor = Union[str, Callable[[pd.DataFrame], Iterable[float]]]
 
-    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, anchor: TonextyAnchor, last_cat_value: Optional[float]) -> Optional[np.ndarray]:
+    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, 
+                                  anchor: Union[str, Callable[[pd.DataFrame], Iterable[float]]], 
+                                  last_cat_value: Optional[float]) -> Optional[np.ndarray]:
         n = len(seg)
         if anchor is None:
             return None
