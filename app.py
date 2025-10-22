@@ -105,38 +105,37 @@ with st.sidebar:
     if col_reset_fees.button("Zurück-setzen", use_container_width=True):
         st.session_state.fees = estimate_fees_from_plz(DEFAULT_PLZ)
         _sync_fee_widget_state()
-    st.session_state.fees["umlagen_ct"] = st.number_input(
+    st.number_input(
         "Umlagen gesamt (ct/kWh)",
         min_value=0.0,
         max_value=10.0,
-        value=float(st.session_state["fee_umlagen"]),
         step=0.001,
         key="fee_umlagen",
     )
-    st.session_state.fees["konzessionsabgabe_ct"] = st.number_input(
+    st.number_input(
         "Konzessionsabgabe (ct/kWh)",
         min_value=0.0,
         max_value=5.0,
-        value=float(st.session_state["fee_konzessionsabgabe"]),
         step=0.01,
         key="fee_konzessionsabgabe",
     )
-    st.session_state.fees["netzentgelt_ct"] = st.number_input(
+    st.number_input(
         "Netzentgelt pauschal (ct/kWh)",
         min_value=0.0,
         max_value=50.0,
-        value=float(st.session_state["fee_netzentgelt"]),
         step=0.1,
         key="fee_netzentgelt",
     )
-    st.session_state.fees["mwst"] = st.number_input(
+    st.number_input(
         "MwSt (%)",
         min_value=0,
         max_value=25,
-        value=int(st.session_state["fee_mwst"]),
         step=1,
         key="fee_mwst",
     )
+    # Sync the main fees dictionary from the individual widget states
+    for field, (key, _) in FEE_WIDGET_KEYS.items():
+        st.session_state.fees[field] = st.session_state[key]
 # ---------------------------------------------------------
 # Top controls
 # ---------------------------------------------------------
@@ -512,7 +511,8 @@ fig = plot_segments_by_category(df_chart, time_col="ts", value_col="ct_per_kwh",
 default_params = dict(
     name="Gesamtpreis", mode="lines",
     line_shape="hv", line=dict(width=1.2, color="#d62728"),
-    fill="tonexty", tonexty_anchor="ct_per_kwh",  tonexty_anchor_line_shape="hv",
+    fill="tonexty", 
+    tonexty_anchor="ct_per_kwh",  tonexty_anchor_line_shape="hv",
     fillcolor="rgba(255, 127, 14, 0.5)",
     customdata="fees_incl_vat_ct",
     hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>"
@@ -629,7 +629,3 @@ with st.container():
         st.caption(
             f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
         )
-st.caption(
-    f"Standard-Fenster: {start_window.strftime('%d.%m %H:%M')} – {(start_window + dt.timedelta(days=1)).strftime('%d.%m %H:%M')} "
-    "Nutze den Range-Slider unter dem Diagramm, um andere Zeitbereiche auszuwählen."
-)
