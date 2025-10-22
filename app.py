@@ -236,32 +236,32 @@ def prepare_price_dataframe(
 
     return df_prepared
 
-def normalize_resolution_hint(hint: Optional[str], default: str = "quarterhour") -> str:
+def normalize_resolution_hint(hint: Optional[str], default: str = "PT15M") -> str:
     if not hint:
         return default
     hint_lower = str(hint).lower()
     if "15" in hint_lower or "quarter" in hint_lower:
-        return "quarterhour"
+        return "PT15M"
     if "60" in hint_lower or "hour" in hint_lower:
-        return "hour"
+        return "PT60M"
     return default
 
-def detect_resolution_label(df: pd.DataFrame, fallback: str = "quarterhour") -> str:
+def detect_resolution_label(df: pd.DataFrame, fallback: str = "PT15M") -> str:
     if df.empty:
         return fallback
     if "resolution" in df.columns:
         res_values = df["resolution"].dropna().astype(str).str.lower()
         if res_values.str.contains("15").any() or res_values.str.contains("quarter").any():
-            return "quarterhour"
+            return "PT15M"
         if res_values.str.contains("60").any() or res_values.str.contains("hour").any():
-            return "hour"
+            return "PT60M"
     diffs = df.sort_values("ts")["ts"].diff().dropna()
     if not diffs.empty:
         median_minutes = diffs.dt.total_seconds().median() / 60.0
         if median_minutes <= 30:
-            return "quarterhour"
+            return "PT15M"
         if median_minutes >= 45:
-            return "hour"
+            return "PT60M"
     return fallback
 
 @st.cache_data(ttl=900)
@@ -315,8 +315,6 @@ def load_price_data(
         return df, meta
     raise PriceDataError(f"Unbekannte Datenquelle: {source}")
 
-
-
 # ------------------------------------------------------
 # Call API and get data df_raw
 # ------------------------------------------------------
@@ -338,6 +336,7 @@ used_region = data_meta.get("region", "DE-LU")
 resolution_fallback = normalize_resolution_hint(
     data_meta.get("raw_resolution"), default=resolution_choice
 )
+
 # ---------------------------------------------------------
 # Data preparation
 # ---------------------------------------------------------
@@ -346,9 +345,16 @@ df_all = prepare_price_dataframe(df_raw, fees=st.session_state.fees)
 if df_all.empty:
     st.info("Keine gültigen Preisdaten verfügbar.")
     st.stop()
+    
 used_resolution = detect_resolution_label(df_all, fallback=resolution_fallback)
 min_ts = df_all["ts"].min()
 max_ts = df_all["ts"].max()
+
+st.caption(
+            f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
+        )
+
+
 
 # ---------------------------------------------------------
 # Keep ALL valid datapoints, then offer a slider to choose the visible window
@@ -625,7 +631,4 @@ with st.container():
         c4.metric("max", f"{max_price:.1f} ct/kWh")
         st.caption(
             f"Sichtbarer Bereich: {view_start.strftime('%d.%m %H:%M')} – {view_end.strftime('%d.%m %H:%M')}"
-        )
-        st.caption(
-            f"Auflösung: {used_resolution} · Region: {used_region} · Quelle: {selected_source_label}"
         )
