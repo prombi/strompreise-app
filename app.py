@@ -568,7 +568,6 @@ start_naive, end_naive = st.slider(
     'Sichtbaren Zeitraum wählen',
     min_value=slider_min,
     max_value=slider_max,
-    value=st.session_state[slider_key],
     step=dt.timedelta(hours=1),
     format='DD.MM.YYYY HH:mm',
     key=slider_key,
