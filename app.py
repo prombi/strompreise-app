@@ -5,8 +5,8 @@ import pandas as pd
 import pytz
 import streamlit as st
 import plotly.graph_objects as go
-import price_sources
-from plot_functions import plot_segments_by_category
+import price_sources as price_sources
+from plot_functions import plot_with_fill_gaps
 
 DEFAULT_PLZ = "82340"
 FEE_WIDGET_KEYS = {
@@ -499,7 +499,8 @@ default_params = dict(
         fill="tozeroy",
         fillcolor="rgba(31, 119, 180, 0.5)",
         customdata="position",
-        hovertemplate=spot_hovertemplate
+        hovertemplate=spot_hovertemplate,
+        # showlegend=True,
 )
 # Adaptations depending on ENTSO-E Position
 params_by_position = {
@@ -510,7 +511,7 @@ params_by_position = {
     )
 }
 
-fig = plot_segments_by_category(df_chart, time_col="ts", value_col="ct_per_kwh", category_col="position", 
+fig = plot_with_fill_gaps(df_chart, time_col="ts", value_col="ct_per_kwh", category_col="position", 
                                  scatter_defaults=default_params, params_by_category=params_by_position)
 
 # Parameters for plotting Gesamtpreis
@@ -518,10 +519,11 @@ default_params = dict(
     name="Gesamtpreis", mode="lines",
     line_shape="hv", line=dict(width=1.2, color="#d62728"),
     fill="tonexty", 
-    tonexty_anchor="ct_per_kwh",  tonexty_anchor_line_shape="hv",
+    tonexty_anchor="ct_per_kwh",
     fillcolor="rgba(255, 127, 14, 0.5)",
     customdata="fees_incl_vat_ct",
-    hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>"
+    hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>",
+    # showlegend=True,
 )
 
 params_by_position = {
@@ -532,7 +534,7 @@ params_by_position = {
     )
 }
 
-fig = plot_segments_by_category(df_all, time_col="ts", value_col="total_ct", category_col="position", 
+fig = plot_with_fill_gaps(df_all, time_col="ts", value_col="total_ct", category_col="position", 
                                 fig=fig,
                                 scatter_defaults=default_params, params_by_category=params_by_position)
 

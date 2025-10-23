@@ -1,7 +1,146 @@
 import numpy as np
 import pandas as pd
+import copy
 import plotly.graph_objects as go
 from typing import Optional, Mapping, Dict, Any, Iterable, Callable, Union
+
+def plot_with_fill_gaps(
+    df: pd.DataFrame,
+    *,
+    time_col: str = "timestamp",
+    value_col: str = "value",
+    category_col: str = "category",
+    params_by_category: Mapping[str, Dict[str, Any]],
+    scatter_defaults: Optional[Dict[str, Any]] = None,
+    sort_by_time: bool = True,
+    fig: Optional[go.Figure] = None
+) -> go.Figure:
+    """
+    Plots time series data by category, creating true visual gaps in filled areas.
+
+    This function solves a common Plotly problem where `connectgaps=False` or `NaN`
+    values do not create gaps in the fill area. It works by inserting zero-value
+    points at the boundaries of each data segment.
+
+    - It creates one trace per category.
+    - For each contiguous segment within a category, it adds points at the start
+      and end with a y-value of 0, forcing the fill to drop to the axis.
+    - It uses a custom hovertemplate to hide tooltips for these artificial points.
+    """
+    # ---------------- helpers ----------------
+    def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+        out = copy.deepcopy(base or {})
+        for k, v in (override or {}).items():
+            if k in out and isinstance(out[k], dict) and isinstance(v, dict):
+                out[k] = _deep_merge(out[k], v)
+            else:
+                out[k] = v
+        return out
+
+    # ---------------- validation & prep ----------------
+    for c in (time_col, value_col, category_col):
+        if c not in df.columns:
+            raise ValueError(f"DataFrame missing column: {c}")
+
+    _df = df.dropna(subset=[time_col, value_col, category_col]).copy()
+    if sort_by_time:
+        _df = _df.sort_values(time_col)
+
+    _df[category_col] = _df[category_col].astype(str)
+
+    fig = fig or go.Figure()
+    legend_seen = {getattr(tr, "name", None) for tr in fig.data if hasattr(tr, "name")}
+    unique_categories = sorted(_df[category_col].unique())
+
+    # ---------------- build traces ----------------
+    for cat in unique_categories:
+        per_cat_params = params_by_category.get(cat, {})
+        merged_params = _deep_merge(scatter_defaults or {}, per_cat_params)
+
+        df_cat = _df[_df[category_col] == cat]
+        if df_cat.empty:
+            continue
+
+        # Identify contiguous segments to insert zero-boundaries
+        df_cat['_segment'] = (df_cat[time_col].diff() > pd.Timedelta(hours=1)).cumsum()
+
+        # Build the new DataFrame with zero-boundary points
+        processed_segments = []
+        for _, segment_df in df_cat.groupby('_segment'):
+            if segment_df.empty:
+                continue
+            
+            # Create start and end points with y=0
+            start_boundary = segment_df.iloc[[0]].copy()
+            start_boundary[value_col] = 0
+            start_boundary['_is_artificial'] = True
+
+            end_boundary = segment_df.iloc[[-1]].copy()
+            end_boundary[value_col] = 0
+            end_boundary['_is_artificial'] = True
+
+            processed_segments.extend([start_boundary, segment_df, end_boundary])
+
+        if not processed_segments:
+            continue
+
+        plot_df = pd.concat(processed_segments).fillna({'_is_artificial': False})
+
+        # Handle 'tonexty' by inserting a hidden baseline trace first
+        tonexty_anchor_col = merged_params.pop("tonexty_anchor", None)
+        tonexty_anchor_line_shape = merged_params.pop("tonexty_anchor_line_shape", None)
+        if merged_params.get("fill") == "tonexty" and isinstance(tonexty_anchor_col, str) and tonexty_anchor_col in plot_df.columns:
+            # Create a baseline trace using the anchor column's data
+            baseline_y = plot_df[tonexty_anchor_col]
+            # The baseline also needs artificial zero-points to create gaps
+            baseline_y = np.where(plot_df['_is_artificial'], 0, baseline_y)
+
+            fig.add_trace(go.Scatter(
+                x=plot_df[time_col],
+                y=baseline_y,
+                mode='lines',
+                line=dict(width=0), # Make the line invisible
+                hoverinfo='none',
+                showlegend=False,
+                # Ensure the baseline has the same step-shape for correct filling
+                line_shape=tonexty_anchor_line_shape or merged_params.get("line_shape"),
+                # Associate with the same legend group to toggle visibility together
+                legendgroup=merged_params.get("name", cat)
+            ))
+
+        # Resolve customdata if it's a column name string
+        customdata_spec = merged_params.get("customdata")
+        if isinstance(customdata_spec, str) and customdata_spec in plot_df.columns:
+            merged_params["customdata"] = plot_df[customdata_spec]
+        elif isinstance(customdata_spec, str):
+             # If it's a string but not a column, it's an error. Remove it to prevent a crash.
+             logging.warning(f"customdata column '{customdata_spec}' not found. Ignoring.")
+             merged_params.pop("customdata")
+
+        # Prepare hovertemplate to hide artificial points
+        original_hovertemplate = merged_params.pop("hovertemplate", "")
+        plot_df['_hovertemplate'] = np.where(
+            plot_df['_is_artificial'],
+            "<extra></extra>",  # Empty hover for artificial points
+            original_hovertemplate
+        )
+        merged_params['hovertemplate'] = plot_df['_hovertemplate']
+
+        # Set legend visibility
+        merged_params.setdefault("name", cat)
+        if "showlegend" not in merged_params:
+            merged_params["showlegend"] = (merged_params["name"] not in legend_seen)
+        legend_seen.add(merged_params["name"])
+
+        fig.add_trace(go.Scatter(
+            x=plot_df[time_col],
+            y=plot_df[value_col],
+            **merged_params
+        ))
+
+    return fig
+
+# -------------------------------------------------------------------------------------------------------
 
 def plot_segments_by_category(
     df: pd.DataFrame,
@@ -44,8 +183,7 @@ def plot_segments_by_category(
                 out[k] = v
         return out
 
-    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, 
-                                    spec: Union[None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]]):
+    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, spec: CustomDataSpec):
         if spec is None:
             return None
         if callable(spec):
@@ -75,9 +213,7 @@ def plot_segments_by_category(
 
     TonextyAnchor = Union[str, Callable[[pd.DataFrame], Iterable[float]]]
 
-    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, 
-                                  anchor: Union[str, Callable[[pd.DataFrame], Iterable[float]]], 
-                                  last_cat_value: Optional[float]) -> Optional[np.ndarray]:
+    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, anchor: TonextyAnchor, last_cat_value: Optional[float]) -> Optional[np.ndarray]:
         n = len(seg)
         if anchor is None:
             return None
