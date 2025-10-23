@@ -610,12 +610,19 @@ if view_start >= view_end:
     view_end = min(max_ts, view_start + pd.Timedelta(hours=1))
 
 st.subheader("Statistik")
-include_fees = st.toggle("Inkl. Gebühren", value=True, key="include_fees_toggle")
+c1, c2 = st.columns(2)
 
-with st.container():
-    if df_view.empty:
-        st.warning("Im ausgewählten Zeitbereich liegen keine Preispunkte vor.")
-    else:
+if df_view.empty:
+    c1.warning("Im ausgewählten Zeitbereich liegen keine Preispunkte vor.")   
+else:
+    c1.caption(
+                f"Sichtbarer Bereich: {view_start.strftime('%d.%m %H:%M')} – {view_end.strftime('%d.%m %H:%M')}"
+            )
+    
+include_fees = c2.toggle("Inkl. Gebühren", value=True, key="include_fees_toggle")
+             
+if not df_view.empty:
+    with st.container():
         metric_col = "total_ct" if include_fees else "spot_ct"
         now_local = now
         idx = df_view['ts'].searchsorted(now_local, side="left")
@@ -630,6 +637,4 @@ with st.container():
         c3, c4 = st.columns(2)
         c3.metric("min", f"{min_price:.1f} ct/kWh")
         c4.metric("max", f"{max_price:.1f} ct/kWh")
-        st.caption(
-            f"Sichtbarer Bereich: {view_start.strftime('%d.%m %H:%M')} – {view_end.strftime('%d.%m %H:%M')}"
-        )
+            
