@@ -57,7 +57,7 @@ def plot_with_fill_gaps(
         per_cat_params = params_by_category.get(cat, {})
         merged_params = _deep_merge(scatter_defaults or {}, per_cat_params)
 
-        df_cat = _df[_df[category_col] == cat]
+        df_cat = _df[_df[category_col] == cat].copy()
         if df_cat.empty:
             continue
 
@@ -73,7 +73,7 @@ def plot_with_fill_gaps(
             # Create start and end points with y=0
             start_boundary = segment_df.iloc[[0]].copy()
             start_boundary[value_col] = 0
-            start_boundary['_is_artificial'] = True
+            start_boundary['_is_artificial'] = pd.Series(True, index=start_boundary.index, dtype="boolean")
 
             end_boundary = segment_df.iloc[[-1]].copy()
             end_boundary[value_col] = 0
@@ -84,7 +84,8 @@ def plot_with_fill_gaps(
         if not processed_segments:
             continue
 
-        plot_df = pd.concat(processed_segments).fillna({'_is_artificial': False})
+        plot_df = pd.concat(processed_segments)
+        plot_df['_is_artificial'] = plot_df['_is_artificial'].fillna(False)
 
         # Handle 'tonexty' by inserting a hidden baseline trace first
         tonexty_anchor_col = merged_params.pop("tonexty_anchor", None)
