@@ -529,7 +529,7 @@ fig.add_trace(go.Scatter(
     line_shape="hv",
     line=dict(width=0.8, color="#1f77b4"),
     fill="tozeroy",
-    fillcolor="rgba(31, 119, 180, 0.25)",
+    fillcolor="rgba(31, 119, 180, 0.5)",
     customdata=df_chart["position"],
     hovertemplate=spot_hovertemplate,
 ))
@@ -542,7 +542,7 @@ fig.add_trace(go.Scatter(
     line_shape="hv",
     line=dict(width=1.2, color="#d62728"),
     fill="tonexty",
-    fillcolor="rgba(255, 127, 14, 0.35)",
+    fillcolor="rgba(255, 127, 14, 0.5)",
     customdata=df_chart["fees_incl_vat_ct"],
     hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>",
 ))
