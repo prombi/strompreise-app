@@ -6,7 +6,6 @@ import pytz
 import streamlit as st
 import plotly.graph_objects as go
 import price_sources as price_sources
-from plot_functions import plot_with_fill_gaps
 
 DEFAULT_PLZ = "82340"
 FEE_WIDGET_KEYS = {
@@ -108,15 +107,15 @@ with st.sidebar:
     st.number_input(
         "Umlagen gesamt (ct/kWh)",
         min_value=0.0,
-        max_value=10.0,
-        step=0.001,
+        max_value=20.0,
+        step=0.1,
         key="fee_umlagen",
     )
     st.number_input(
         "Konzessionsabgabe (ct/kWh)",
         min_value=0.0,
-        max_value=5.0,
-        step=0.01,
+        max_value=10.0,
+        step=0.1,
         key="fee_konzessionsabgabe",
     )
     st.number_input(
@@ -479,6 +478,36 @@ if view_start <= now_local <= view_end:
     ))
 # --- End of line generation ---
 
+# --- Generate shapes for fallback data periods ---
+fallback_shapes = []
+if data_source_choice == "ENTSOE-COMBINED" and "position" in df_chart.columns:
+    is_fallback = df_chart['position'] == '2'
+    if is_fallback.any():
+        # Find start and end of contiguous fallback blocks
+        fallback_starts = df_chart['ts'][is_fallback & ~is_fallback.shift(1).fillna(False)]
+        fallback_ends = df_chart['ts'][is_fallback & ~is_fallback.shift(-1).fillna(False)]
+
+        # Determine the interval duration to correctly set the end of the rectangle
+        resolution_minutes = 15 if '15' in used_resolution else 60
+        interval_duration = pd.Timedelta(minutes=resolution_minutes)
+
+        for start_ts, end_ts in zip(fallback_starts, fallback_ends):
+            # The rectangle should cover the full interval of the last point in the block
+            end_of_block = end_ts + interval_duration
+            
+            fallback_shapes.append(go.layout.Shape(
+                type="rect",
+                xref="x",
+                yref="paper",
+                x0=start_ts,
+                x1=end_of_block,
+                y0=0,
+                y1=1,
+                fillcolor="rgba(128, 128, 128, 0.2)",
+                line_width=0,
+                layer="below" # Draw below the price lines
+            ))
+
 # ----- Plotting Logic -----
 # --- Plot spot price --- 
 # Base hovertemplate for spot price
@@ -490,53 +519,33 @@ if data_source_choice.startswith("ENTSOE"):
         "ENTSO-E Position: %{customdata}<extra></extra>"
     )
 
-# Parameters for plotting Börsenstrompreis
-default_params = dict(
-        name="Börsenstrompreis", 
-        mode="lines",
-        line_shape="hv", 
-        line=dict(width=0.8, color="#1f77b4"),
-        fill="tozeroy",
-        fillcolor="rgba(31, 119, 180, 0.5)",
-        customdata="position",
-        hovertemplate=spot_hovertemplate,
-        # showlegend=True,
-)
-# Adaptations depending on ENTSO-E Position
-params_by_position = {
-    "1": dict(),
-    "2": dict(
-        line=dict(width=0.8),
-        fillcolor="rgba(31, 119, 180, 0.25)",
-    )
-}
+fig = go.Figure()
 
-fig = plot_with_fill_gaps(df_chart, time_col="ts", value_col="ct_per_kwh", category_col="position", 
-                                 scatter_defaults=default_params, params_by_category=params_by_position)
+fig.add_trace(go.Scatter(
+    x=df_chart["ts"],
+    y=df_chart["ct_per_kwh"],
+    name="Börsenstrompreis",
+    mode="lines",
+    line_shape="hv",
+    line=dict(width=0.8, color="#1f77b4"),
+    fill="tozeroy",
+    fillcolor="rgba(31, 119, 180, 0.25)",
+    customdata=df_chart["position"],
+    hovertemplate=spot_hovertemplate,
+))
 
-# Parameters for plotting Gesamtpreis
-default_params = dict(
-    name="Gesamtpreis", mode="lines",
-    line_shape="hv", line=dict(width=1.2, color="#d62728"),
-    fill="tonexty", 
-    tonexty_anchor="ct_per_kwh",
-    fillcolor="rgba(255, 127, 14, 0.5)",
-    customdata="fees_incl_vat_ct",
+fig.add_trace(go.Scatter(
+    x=df_chart["ts"],
+    y=df_chart["total_ct"],
+    name="Gesamtpreis",
+    mode="lines",
+    line_shape="hv",
+    line=dict(width=1.2, color="#d62728"),
+    fill="tonexty",
+    fillcolor="rgba(255, 127, 14, 0.35)",
+    customdata=df_chart["fees_incl_vat_ct"],
     hovertemplate="Gesamtpreis: %{y:.1f} ct/kWh<br>Gebühren: %{customdata:.1f} ct/kWh<extra></extra>",
-    # showlegend=True,
-)
-
-params_by_position = {
-    "1": dict(),
-    "2": dict(
-        line=dict(width=0.8),
-        fillcolor="rgba(255, 127, 14, 0.25)",
-    )
-}
-
-fig = plot_with_fill_gaps(df_all, time_col="ts", value_col="total_ct", category_col="position", 
-                                fig=fig,
-                                scatter_defaults=default_params, params_by_category=params_by_position)
+))
 
 fig.update_layout(
     height=400,
@@ -561,7 +570,7 @@ fig.update_layout(
         x=1.0,
     ),
     hoverlabel=dict(bgcolor="rgba(255,255,255,0.9)", namelength=-1),
-    shapes=day_shapes,
+    shapes=day_shapes + fallback_shapes,
 )
 st.plotly_chart(fig, use_container_width=True)
 start_naive, end_naive = st.slider(
