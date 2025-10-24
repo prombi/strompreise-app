@@ -447,10 +447,10 @@ padding = y_max * 0.05
 day_shapes = []
 
 # Iterate through each day in the visible range to create day/midday markers
-loop_day_start = view_start.replace(hour=0, minute=0, second=0, microsecond=0)
+loop_day_start = min_ts.replace(hour=0, minute=0, second=0, microsecond=0)
 
 current_ts = loop_day_start
-while current_ts <= view_end:
+while current_ts <= max_ts:
     # Midnight line (solid)
     day_shapes.append(go.layout.Shape(
         type="line",
@@ -459,7 +459,7 @@ while current_ts <= view_end:
     ))
     # Midday line (dashed)
     midday_ts = current_ts.replace(hour=12)
-    if midday_ts < view_end:
+    if midday_ts < max_ts:
         day_shapes.append(go.layout.Shape(
             type="line",
             x0=midday_ts, x1=midday_ts, y0=0, y1=1, yref="paper",
@@ -469,7 +469,7 @@ while current_ts <= view_end:
 
 # Add a special line for the current time ("now")
 now_local = dt.datetime.now(tz=tz_berlin)
-if view_start <= now_local <= view_end:
+if min_ts <= now_local <= max_ts:
     day_shapes.append(go.layout.Shape(
         type="line",
         x0=now_local, x1=now_local, y0=0, y1=1, yref="paper",
