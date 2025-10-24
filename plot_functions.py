@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import copy
 import plotly.graph_objects as go
+import logging
 from typing import Optional, Mapping, Dict, Any, Iterable, Callable, Union
 
 def plot_with_fill_gaps(
@@ -173,8 +174,6 @@ def plot_segments_by_category(
     """
 
     # ---------------- helpers ----------------
-    CustomDataSpec = Union[None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]]
-
     def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
         out = dict(base or {})
         for k, v in (override or {}).items():
@@ -184,7 +183,7 @@ def plot_segments_by_category(
                 out[k] = v
         return out
 
-    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, spec: CustomDataSpec):
+    def _resolve_segment_customdata(seg: pd.DataFrame, full_df: pd.DataFrame, spec: Union[None, str, Iterable[str], pd.Series, np.ndarray, Callable[[pd.DataFrame], np.ndarray]]):
         if spec is None:
             return None
         if callable(spec):
@@ -212,9 +211,7 @@ def plot_segments_by_category(
         arr = vec[pos_idx]
         return arr.reshape(-1, 1) if arr.ndim == 1 else np.asarray(arr)
 
-    TonextyAnchor = Union[str, Callable[[pd.DataFrame], Iterable[float]]]
-
-    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, anchor: TonextyAnchor, last_cat_value: Optional[float]) -> Optional[np.ndarray]:
+    def _resolve_tonexty_baseline(seg: pd.DataFrame, *, anchor: Union[str, Callable[[pd.DataFrame], Iterable[float]]], last_cat_value: Optional[float]) -> Optional[np.ndarray]:
         n = len(seg)
         if anchor is None:
             return None
