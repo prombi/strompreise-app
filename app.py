@@ -484,8 +484,8 @@ if data_source_choice == "ENTSOE-COMBINED" and "position" in df_chart.columns:
     is_fallback = df_chart['position'] == '2'
     if is_fallback.any():
         # Find start and end of contiguous fallback blocks
-        fallback_starts = df_chart['ts'][is_fallback & ~is_fallback.shift(1).fillna(False)]
-        fallback_ends = df_chart['ts'][is_fallback & ~is_fallback.shift(-1).fillna(False)]
+        fallback_starts = df_chart['ts'][is_fallback & ~is_fallback.shift(periods=1, fill_value=False)]
+        fallback_ends = df_chart['ts'][is_fallback & ~is_fallback.shift(periods=-1, fill_value=False)]
 
         # Determine the interval duration to correctly set the end of the rectangle
         resolution_minutes = 15 if '15' in used_resolution else 60
